@@ -292,6 +292,12 @@
         let keys = {};
         let gameFrame = 0;
 
+        // --- Nuevas variables de Dificultad ---
+        let enemySpawnTimer = 0;
+        let enemySpawnInterval = 100; // Frames (approx 1.6s) para spawn
+        let maxEnemiesOnScreen = 5; // Máximos enemigos a la vez
+        // --- Fin Nuevas variables ---
+
         // --- 2. CLASES DEL JUEGO (MODIFICADAS PARA PSEUDO-3D) ---
 
         // Clase del Planeta (Fondo)
@@ -419,7 +425,7 @@
                 this.shootProbability = 0.008; // Ligeramente más agresivos
                 this.baseWidth = 35;
                 this.baseHeight = 30;
-                this.health = 3; // <-- NUEVO: Los enemigos tienen vida
+                this.health = 2; // <-- CAMBIO: 2 de vida (antes 3)
             }
             
             // Proyección 2.5D
@@ -553,6 +559,8 @@
             score = 0;
             enemiesToDefeat = 50; // <-- CAMBIO: Misión más larga
             gameFrame = 0;
+            enemySpawnTimer = 0; // Reiniciar timer de spawn
+            enemySpawnInterval = 100; // Reiniciar intervalo
             
             updateUI();
 
@@ -561,10 +569,19 @@
                 stars.push(new Star());
             }
 
-            spawnEnemies(15); // <-- CAMBIO: Oleada inicial más grande
+            // spawnEnemies(15); // <-- ELIMINADO
+            // Empezar con 3 enemigos
+            for (let i = 0; i < 3; i++) {
+                spawnEnemy();
+            }
         }
 
-        // Generar enemigos
+        // Generar enemigos (Ahora solo genera 1)
+        function spawnEnemy() {
+            enemies.push(new Enemy());
+        }
+
+        // Generar enemigos (Función anterior, ahora en desuso o para oleadas iniciales)
         function spawnEnemies(count) {
             for (let i = 0; i < count; i++) {
                 setTimeout(() => {
@@ -607,9 +624,30 @@
             }
 
             // Enemigos
+            /* ELIMINADO
             if (enemies.length === 0 && score < enemiesToDefeat) {
                 spawnEnemies(15); // <-- CAMBIO: Siguiente oleada más grande
             }
+            */
+            
+            // --- NUEVO Sistema de Spawn Gradual ---
+            enemySpawnTimer++;
+            // Si ha pasado el tiempo Y no hay demasiados enemigos Y no hemos llegado al total de la misión
+            if (enemySpawnTimer > enemySpawnInterval && 
+                enemies.length < maxEnemiesOnScreen && 
+                (score + enemies.length) < enemiesToDefeat) { // Asegura no spawnear de más
+                
+                spawnEnemy(); // Spawnea 1 enemigo
+                enemySpawnTimer = 0; // Reiniciar timer
+                
+                // Acelerar el spawn a medida que avanza el juego
+                if (score > enemiesToDefeat * 0.75) { // 75%
+                    enemySpawnInterval = 50; // Más rápido
+                } else if (score > enemiesToDefeat * 0.4) { // 40%
+                    enemySpawnInterval = 75; // Un poco más rápido
+                }
+            }
+            // --- FIN Nuevo Sistema de Spawn ---
             
             for (let i = enemies.length - 1; i >= 0; i--) {
                 enemies[i].update();
@@ -869,5 +907,6 @@
 
 </body>
 </html>
+
 
 
