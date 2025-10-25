@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo: Liberation Espacial</title>
+    <!-- Usamos Tailwind CSS para estilizar la UI de forma moderna y rápida -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Usamos la fuente 'Inter' que es limpia y moderna, similar a la estética de la NASA */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #000;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* Evita barras de scroll */
+        }
+        
+        /* El contenedor principal del juego */
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* El canvas donde se dibuja el juego */
+        #game-canvas {
+            display: block;
+            background-color: #000;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        /* Capa de la Interfaz de Usuario (UI) sobre el canvas */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none; /* Permite que los clics "atraviesen" esta capa hacia el canvas si fuera necesario */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Contenedor para las estadísticas (vidas, puntuación) */
+        #game-stats {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            background-color: rgba(10, 20, 40, 0.7);
+            padding: 12px 18px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            pointer-events: all;
+            backdrop-filter: blur(5px); /* Efecto "frosty" */
+        }
+
+        /* Estilo para las pantallas modales (Inicio, Ganar, Perder) */
+        .modal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(10, 20, 40, 0.9);
+            border: 2px solid #4a90e2; /* Azul brillante estilo "tech" */
+            border-radius: 16px;
+            padding: 2rem 3rem;
+            text-align: center;
+            z-index: 20;
+            pointer-events: all;
+            display: none; /* Ocultas por defecto */
+            flex-direction: column;
+            align-items: center;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(74, 144, 226, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .modal h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 1rem;
+            letter-spacing: -1px;
+        }
+
+        .modal p {
+            font-size: 1.1rem;
+            color: #eee;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        /* Botón principal de las modales */
+        .modal-button {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #fff;
+            background-color: #4a90e2;
+            padding: 0.75rem 1.75rem;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 15px rgba(74, 144, 226, 0.4);
+        }
+
+        .modal-button:hover {
+            background-color: #357abd;
+            box-shadow: 0 6px 20px rgba(74, 144, 226, 0.6);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <!-- El Canvas donde se renderiza todo el juego -->
+        <canvas id="game-canvas"></canvas>
+
+        <!-- Capa de UI sobre el juego -->
+        <div id="ui-layer">
+            
+            <!-- Estadísticas: Vidas y Puntuación (Liberación) -->
+            <div id="game-stats" class="text-white">
+                <div>Vidas: <span id="lives-count">5</span></div>
+                <div>Planeta Liberado: <span id="score-count">0</span>%</div>
+            </div>
+
+            <!-- Pantalla de Inicio (Modal) -->
+            <div id="start-screen" class="modal" style="display: flex;">
+                <h1>Liberation Espacial</h1>
+                <p>¡Piloto! ¡Los reptilianos han bloqueado el Planeta X! <br> Lleva a tu escuadrón y libéralo.</p>
+                <p class="text-sm text-gray-400 mb-4">Controles: [W, A, S, D] Moverse | [Espacio] Disparar</p>
+                <button id="start-button" class="modal-button">¡Iniciar Misión!</button>
+            </div>
+
+            <!-- Pantalla de Victoria (Modal) -->
+            <div id="win-screen" class="modal">
+                <h1>¡Planeta Liberado!</h1>
+                <p>¡Gran trabajo, piloto! Los aliados te recompensan.<br> <strong class="text-lg text-green-400">+5 Vidas Obtenidas.</strong></p>
+                <button id="next-level-button" class="modal-button">Siguiente Planeta (Reiniciar)</button>
+            </div>
+
+            <!-- Pantalla de Game Over (Modal) -->
+            <div id="game-over-screen" class="modal">
+                <h1>Misión Fallida</h1>
+                <p>La nave ha sido destruida. Los reptilianos han ganado esta batalla.</p>
+                <button id="restart-button" class="modal-button">Reintentar Misión</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. CONFIGURACIÓN INICIAL ---
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Elementos de la UI
+        const uiLayer = document.getElementById('ui-layer');
+        const livesCountEl = document.getElementById('lives-count');
+        const scoreCountEl = document.getElementById('score-count');
+        const startScreen = document.getElementById('start-screen');
+        const winScreen = document.getElementById('win-screen');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const startButton = document.getElementById('start-button');
+        const nextLevelButton = document.getElementById('next-level-button');
+        const restartButton = document.getElementById('restart-button');
+
+        let canvasWidth, canvasHeight;
+        let player, allies, bullets, enemyBullets, enemies, particles, stars;
+        let lives, score, enemiesToDefeat;
+        let gameState = 'start'; // 'start', 'playing', 'won', 'over'
+        let keys = {}; // Para seguimiento de teclas presionadas
+        let gameFrame = 0; // Contador de frames
+
+        // --- 2. CLASES DEL JUEGO ---
+
+        // Clase base para todas las naves
+        class Ship {
+            constructor(x, y, width, height, color) {
+                this.x = x;
+                this.y = y;
+                this.width = width;
+                this.height = height;
+                this.color = color;
+                this.speed = 5;
+                this.lastShotFrame = 0;
+            }
+
+            draw() {
+                // Las subclases implementarán su propio dibujo
+            }
+
+            update() {
+                // Las subclases implementarán su propia lógica de actualización
+            }
+        }
+
+        // Clase del Jugador
+        class Player extends Ship {
+            constructor(x, y) {
+                super(x, y, 30, 40, '#FFFFFF'); // Nave principal blanca
+                this.shootCooldown = 15; // Frames entre disparos
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y - this.height / 2); // Punta
+                ctx.lineTo(this.x - this.width / 2, this.y + this.height / 2); // Ala izquierda
+                ctx.lineTo(this.x + this.width / 2, this.y + this.height / 2); // Ala derecha
+                ctx.closePath();
+                ctx.fill();
+
+                // Propulsor
+                ctx.fillStyle = '#4a90e2'; // Azul
+                ctx.fillRect(this.x - this.width / 4, this.y + this.height / 2, this.width / 2, 10);
+            }
+
+            update() {
+                if (keys['w'] || keys['ArrowUp']) this.y -= this.speed;
+                if (keys['s'] || keys['ArrowDown']) this.y += this.speed;
+                if (keys['a'] || keys['ArrowLeft']) this.x -= this.speed;
+                if (keys['d'] || keys['ArrowRight']) this.x += this.speed;
+
+                // Limitar al canvas
+                if (this.x - this.width / 2 < 0) this.x = this.width / 2;
+                if (this.x + this.width / 2 > canvasWidth) this.x = canvasWidth - this.width / 2;
+                if (this.y - this.height / 2 < 0) this.y = this.height / 2;
+                if (this.y + this.height / 2 > canvasHeight) this.y = canvasHeight - this.height / 2;
+
+                // Disparar
+                if (keys[' '] && (gameFrame - this.lastShotFrame) > this.shootCooldown) {
+                    this.shoot();
+                    this.lastShotFrame = gameFrame;
+                }
+            }
+
+            shoot() {
+                // Disparo central
+                bullets.push(new Projectile(this.x, this.y - this.height / 2, 5, 10, '#4a90e2', -15));
+            }
+        }
+
+        // Clase del Aliado
+        class Ally extends Ship {
+            constructor(x, y, playerToFollow) {
+                super(x, y, 20, 25, '#4a90e2'); // Naves aliadas azules
+                this.player = playerToFollow;
+                this.offsetX = (Math.random() - 0.5) * 150 + (Math.random() > 0.5 ? 50 : -50);
+                this.offsetY = Math.random() * 50 + 50;
+                this.shootCooldown = 45; // Disparan más lento que el jugador
+                this.followSpeed = 0.05; // Velocidad de seguimiento
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y - this.height / 2);
+                ctx.lineTo(this.x - this.width / 2, this.y + this.height / 2);
+                ctx.lineTo(this.x + this.width / 2, this.y + this.height / 2);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            update() {
+                // Sigue al jugador con un "offset"
+                let targetX = this.player.x + this.offsetX;
+                let targetY = this.player.y + this.offsetY;
+                
+                this.x += (targetX - this.x) * this.followSpeed;
+                this.y += (targetY - this.y) * this.followSpeed;
+
+                // Disparo automático
+                if ((gameFrame - this.lastShotFrame) > this.shootCooldown) {
+                    this.shoot();
+                    this.lastShotFrame = gameFrame;
+                }
+            }
+
+            shoot() {
+                bullets.push(new Projectile(this.x, this.y - this.height / 2, 4, 8, '#87CEEB', -10)); // Disparo azul claro
+            }
+        }
+
+        // Clase del Enemigo "Reptiliano"
+        class Enemy extends Ship {
+            constructor(x, y) {
+                super(x, y, 35, 30, '#2E8B57'); // Verde reptiliano
+                this.speed = Math.random() * 2 + 1;
+                this.shootProbability = 0.005; // Probabilidad de disparar en cada frame
+                this.movePattern = Math.random() > 0.5 ? 'straight' : 'sine';
+                this.baseX = x;
+                this.sineAngle = Math.random() * Math.PI * 2;
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y + this.height / 2); // Punta inferior
+                ctx.lineTo(this.x - this.width / 2, this.y - this.height / 2); // Ala superior izquierda
+                ctx.lineTo(this.x + this.width / 2, this.y - this.height / 2); // Ala superior derecha
+                ctx.closePath();
+                ctx.fill();
+                
+                // "Cabina" roja
+                ctx.fillStyle = '#DC143C';
+                ctx.fillRect(this.x - 3, this.y - this.height / 4, 6, 6);
+            }
+
+            update() {
+                if (this.movePattern === 'straight') {
+                    this.y += this.speed;
+                } else {
+                    this.y += this.speed;
+                    this.x = this.baseX + Math.sin(this.sineAngle) * 50;
+                    this.sineAngle += 0.03;
+                }
+
+                // Disparo aleatorio
+                if (Math.random() < this.shootProbability && this.y < canvasHeight / 2) {
+                    this.shoot();
+                }
+            }
+            
+            shoot() {
+                enemyBullets.push(new Projectile(this.x, this.y + this.height / 2, 4, 8, '#DC143C', 8)); // Disparo rojo
+            }
+        }
+
+        // Clase del Proyectil
+        class Projectile {
+            constructor(x, y, width, height, color, velocityY) {
+                this.x = x;
+                this.y = y;
+                this.width = width;
+                this.height = height;
+                this.color = color;
+                this.velocityY = velocityY;
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x - this.width / 2, this.y, this.width, this.height);
+            }
+
+            update() {
+                this.y += this.velocityY;
+            }
+        }
+
+        // Clase para Partículas (Explosiones)
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.radius = Math.random() * 5 + 2;
+                this.velocity = {
+                    x: (Math.random() - 0.5) * 8,
+                    y: (Math.random() - 0.5) * 8
+                };
+                this.alpha = 1;
+                this.decay = Math.random() * 0.05 + 0.01;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            update() {
+                this.x += this.velocity.x;
+                this.y += this.velocity.y;
+                this.alpha -= this.decay;
+            }
+        }
+        
+        // Clase para las Estrellas (Fondo)
+        class Star {
+            constructor() {
+                this.x = Math.random() * canvasWidth;
+                this.y = Math.random() * canvasHeight;
+                this.radius = Math.random() * 1.5;
+                this.speed = Math.random() * 0.5 + 0.1;
+                this.color = `rgba(255, 255, 255, ${Math.random() * 0.5 + 0.3})`;
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            update() {
+                this.y += this.speed;
+                if (this.y > canvasHeight) {
+                    this.y = 0;
+                    this.x = Math.random() * canvasWidth;
+                }
+            }
+        }
+
+
+        // --- 3. FUNCIONES DEL JUEGO ---
+
+        // Inicializar/Reiniciar variables del juego
+        function initGame() {
+            player = new Player(canvasWidth / 2, canvasHeight - 80);
+            allies = [
+                new Ally(player.x - 50, player.y + 60, player),
+                new Ally(player.x + 50, player.y + 60, player)
+            ];
+            bullets = [];
+            enemyBullets = [];
+            enemies = [];
+            particles = [];
+            stars = [];
+
+            lives = 5;
+            score = 0;
+            enemiesToDefeat = 20; // 20 enemigos para liberar el planeta
+            gameFrame = 0;
+            
+            livesCountEl.textContent = lives;
+            scoreCountEl.textContent = '0%';
+
+            // Crear estrellas de fondo
+            for (let i = 0; i < 150; i++) {
+                stars.push(new Star());
+            }
+
+            spawnEnemies(10); // Primera oleada
+        }
+
+        // Generar enemigos
+        function spawnEnemies(count) {
+            for (let i = 0; i < count; i++) {
+                const x = Math.random() * (canvasWidth - 60) + 30;
+                const y = Math.random() * -500 - 50; // Aparecen fuera de la pantalla
+                enemies.push(new Enemy(x, y));
+            }
+        }
+        
+        // Dibujar fondo de estrellas
+        function handleBackground() {
+            ctx.fillStyle = '#000005'; // Fondo negro ligeramente azulado
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+            
+            // Dibujar nebulosa (opcional, para dar profundidad)
+            ctx.save();
+            ctx.globalAlpha = 0.1;
+            ctx.fillStyle = '#4a0d66'; // Morado
+            ctx.beginPath();
+            ctx.ellipse(canvasWidth * 0.2, canvasHeight * 0.3, 200, 400, Math.PI / 4, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.fillStyle = '#0d3b66'; // Azul oscuro
+            ctx.beginPath();
+            ctx.ellipse(canvasWidth * 0.8, canvasHeight * 0.6, 300, 300, 0, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.restore();
+
+            stars.forEach(star => {
+                star.update();
+                star.draw();
+            });
+        }
+
+        // Manejar todos los elementos del juego
+        function handleGameElements() {
+            // Jugador
+            player.update();
+            player.draw();
+
+            // Aliados
+            allies.forEach(ally => {
+                ally.update();
+                ally.draw();
+            });
+
+            // Balas del Jugador y Aliados
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                bullets[i].update();
+                bullets[i].draw();
+
+                // Quitar balas fuera de pantalla
+                if (bullets[i].y < 0) {
+                    bullets.splice(i, 1);
+                }
+            }
+            
+            // Balas Enemigas
+            for (let i = enemyBullets.length - 1; i >= 0; i--) {
+                enemyBullets[i].update();
+                enemyBullets[i].draw();
+
+                // Quitar balas fuera de pantalla
+                if (enemyBullets[i].y > canvasHeight) {
+                    enemyBullets.splice(i, 1);
+                }
+            }
+
+            // Enemigos
+            if (enemies.length === 0 && score < enemiesToDefeat) {
+                // Siguiente oleada
+                spawnEnemies(10);
+            }
+            
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                enemies[i].update();
+                enemies[i].draw();
+                
+                // Quitar enemigos fuera de pantalla
+                if (enemies[i].y > canvasHeight + enemies[i].height) {
+                    enemies.splice(i, 1);
+                }
+            }
+
+            // Partículas (Explosiones)
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                particles[i].draw();
+                if (particles[i].alpha <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+        
+        // Manejar Colisiones
+        function handleCollisions() {
+            // Colisión: Balas del jugador -> Enemigos
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                for (let j = enemies.length - 1; j >= 0; j--) {
+                    if (collisionDetect(bullets[i], enemies[j])) {
+                        createExplosion(enemies[j].x, enemies[j].y, enemies[j].color);
+                        bullets.splice(i, 1);
+                        enemies.splice(j, 1);
+                        
+                        score++;
+                        updateScore();
+                        break; // Salir del bucle interno
+                    }
+                }
+            }
+            
+            // Colisión: Balas enemigas -> Jugador
+            for (let i = enemyBullets.length - 1; i >= 0; i--) {
+                if (collisionDetect(enemyBullets[i], player)) {
+                    createExplosion(player.x, player.y, player.color);
+                    enemyBullets.splice(i, 1);
+                    playerHit();
+                    break;
+                }
+            }
+            
+            // Colisión: Enemigos -> Jugador
+             for (let i = enemies.length - 1; i >= 0; i--) {
+                if (collisionDetect(enemies[i], player)) {
+                    createExplosion(player.x, player.y, player.color);
+                    createExplosion(enemies[i].x, enemies[i].y, enemies[i].color);
+                    enemies.splice(i, 1);
+                    playerHit();
+                    break;
+                }
+            }
+        }
+        
+        // Detección de colisión simple (Rectángulo/Rectángulo)
+        function collisionDetect(rect1, rect2) {
+            return rect1.x - rect1.width/2 < rect2.x + rect2.width/2 &&
+                   rect1.x + rect1.width/2 > rect2.x - rect2.width/2 &&
+                   rect1.y - rect1.height/2 < rect2.y + rect2.height/2 &&
+                   rect1.y + rect1.height/2 > rect2.y - rect2.height/2;
+        }
+
+        // Crear una explosión
+        function createExplosion(x, y, color) {
+            for (let i = 0; i < 20; i++) {
+                particles.push(new Particle(x, y, color));
+            }
+            for (let i = 0; i < 5; i++) {
+                particles.push(new Particle(x, y, '#FFA500')); // Naranja
+            }
+        }
+        
+        // Jugador golpeado
+        function playerHit() {
+            lives--;
+            livesCountEl.textContent = lives;
+            if (lives <= 0) {
+                setGameState('over');
+            }
+        }
+        
+        // Actualizar puntuación
+        function updateScore() {
+            let liberationPercentage = Math.floor((score / enemiesToDefeat) * 100);
+            scoreCountEl.textContent = `${liberationPercentage}%`;
+            
+            if (score >= enemiesToDefeat) {
+                setGameState('won');
+            }
+        }
+
+        // Manejar el estado del juego
+        function setGameState(newState) {
+            if (gameState === newState) return;
+            gameState = newState;
+
+            // Ocultar todas las modales
+            startScreen.style.display = 'none';
+            winScreen.style.display = 'none';
+            gameOverScreen.style.display = 'none';
+
+            if (gameState === 'playing') {
+                gameLoop(); // Iniciar el bucle
+            } else if (gameState === 'won') {
+                winScreen.style.display = 'flex';
+                // ¡AQUÍ ESTÁ TU RECOMPENSA!
+                lives += 5; 
+                livesCountEl.textContent = lives;
+            } else if (gameState === 'over') {
+                gameOverScreen.style.display = 'flex';
+            } else if (gameState === 'start') {
+                startScreen.style.display = 'flex';
+            }
+        }
+
+        // --- 4. BUCLE PRINCIPAL DEL JUEGO ---
+
+        function gameLoop() {
+            if (gameState !== 'playing') {
+                return; // Detener el bucle si no estamos jugando
+            }
+
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+            
+            handleBackground();
+            handleGameElements();
+            handleCollisions();
+
+            gameFrame++; // Incrementar contador de frames
+            requestAnimationFrame(gameLoop); // Continuar el bucle
+        }
+
+        // --- 5. INICIALIZACIÓN Y EVENTOS ---
+
+        // Función para redimensionar el canvas
+        function resizeCanvas() {
+            canvasWidth = window.innerWidth;
+            canvasHeight = window.innerHeight;
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
+            
+            // Reiniciar estrellas para el nuevo tamaño
+            if (stars && stars.length > 0) {
+                 stars = [];
+                 for (let i = 0; i < 150; i++) {
+                    stars.push(new Star());
+                }
+            }
+            
+            // Reposicionar al jugador si el juego está activo
+            if(player) {
+                player.x = canvasWidth / 2;
+                player.y = canvasHeight - 80;
+            }
+        }
+
+        // Eventos de teclado
+        window.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            keys[e.key.toLowerCase()] = false;
+        });
+
+        // Evento de redimensionar ventana
+        window.addEventListener('resize', resizeCanvas);
+
+        // Eventos de botones de la UI
+        function startGame() {
+            initGame();
+            setGameState('playing');
+        }
+
+        startButton.addEventListener('click', startGame);
+        nextLevelButton.addEventListener('click', startGame); // Reinicia por ahora
+        restartButton.addEventListener('click', startGame);
+
+        // Configuración inicial
+        resizeCanvas();
+        setGameState('start'); // Mostrar pantalla de inicio
+    </script>
+
+</body>
+</html>
