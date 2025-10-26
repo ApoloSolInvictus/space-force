@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Space Force 1 - Maverick</title>
+    <title>Space Force 1: Maverick</title>
     <!-- Usamos Tailwind CSS para estilizar la UI -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -279,6 +279,22 @@
         let canvasWidth, canvasHeight;
         let player, bullets, enemyBullets, enemies, particles, stars, planet;
         
+        // --- NUEVAS VARIABLES PARA IMÁGENES ---
+        let playerImage = new Image();
+        let enemyImage = new Image();
+        let imagesLoaded = 0;
+        const totalImages = 2;
+
+        // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        // +++ ¡SOCIO! AQUÍ PONES LAS RUTAS A TUS IMÁGENES PNG +++
+        // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        // Escribe la ruta local a tus archivos, ej: "maverick.png" o "assets/nave.png"
+        
+        playerImage.src = 'images/maverick.png'; // <-- CAMBIA ESTO
+        enemyImage.src = 'images/reptil.png';   // <-- CAMBIA ESTO
+        
+        // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        
         // Estadísticas del jugador
         let lives = 5;
         let resources = 0;
@@ -361,23 +377,25 @@
                 this.x = canvasWidth / 2 - this.width / 2;
                 this.y = canvasHeight - this.height - 30; // Fijo en la parte inferior
                 this.speed = 10;
-                this.color = '#FFFFFF';
+                this.image = playerImage; // <-- ASIGNAR IMAGEN
                 this.lastShotFrame = 0;
             }
 
             draw() {
-                ctx.fillStyle = this.color;
-                ctx.beginPath();
-                // Dibujo simple de nave (similar al anterior)
-                ctx.moveTo(this.x + this.width / 2, this.y); // Punta
-                ctx.lineTo(this.x, this.y + this.height); // Ala izquierda
-                ctx.lineTo(this.x + this.width, this.y + this.height); // Ala derecha
-                ctx.closePath();
-                ctx.fill();
-
-                // Propulsor
-                ctx.fillStyle = '#4a90e2';
-                ctx.fillRect(this.x + this.width / 2 - this.width / 4, this.y + this.height, this.width / 2, 10);
+                // --- INICIO NUEVO DISEÑO (IMAGEN) ---
+                if (this.image && this.image.complete) {
+                    ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+                } else {
+                    // Fallback si la imagen no carga
+                    ctx.fillStyle = '#C0C0C0';
+                    ctx.fillRect(this.x, this.y, this.width, this.height);
+                }
+                
+                // Propulsores (Quita esto si tu PNG ya los tiene)
+                ctx.fillStyle = '#77b6ff'; 
+                ctx.fillRect(this.x + this.width * 0.25, this.y + this.height, this.width * 0.15, 10 + Math.random()*5); // Propulsor izquierdo
+                ctx.fillRect(this.x + this.width * 0.60, this.y + this.height, this.width * 0.15, 10 + Math.random()*5); // Propulsor derecho
+                // --- FIN NUEVO DISEÑO ---
             }
 
             update() {
@@ -421,11 +439,11 @@
                 this.height = 0;
                 
                 this.speed = Math.random() * 0.3 + 0.2; // Velocidad de acercamiento
-                this.color = '#2E8B57';
+                this.image = enemyImage; // <-- ASIGNAR IMAGEN
                 this.shootProbability = 0.008; // Ligeramente más agresivos
                 this.baseWidth = 35;
                 this.baseHeight = 30;
-                this.health = 2; // <-- CAMBIO: 2 de vida (antes 3)
+                this.health = 2; 
             }
             
             // Proyección 2.5D
@@ -441,17 +459,15 @@
             }
 
             draw() {
-                ctx.fillStyle = this.color;
-                ctx.beginPath();
-                ctx.moveTo(this.x + this.width / 2, this.y + this.height); // Punta inferior
-                ctx.lineTo(this.x, this.y); // Ala superior izquierda
-                ctx.lineTo(this.x + this.width, this.y); // Ala superior derecha
-                ctx.closePath();
-                ctx.fill();
-                
-                // "Cabina" roja
-                ctx.fillStyle = '#DC143C';
-                ctx.fillRect(this.x + this.width/2 - this.width*0.1, this.y + this.height * 0.25, this.width*0.2, this.width*0.2);
+                // --- INICIO NUEVO DISEÑO (IMAGEN) ---
+                if (this.image && this.image.complete) {
+                    ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+                } else {
+                    // Fallback si la imagen no carga
+                    ctx.fillStyle = '#556677';
+                    ctx.fillRect(this.x, this.y, this.width, this.height);
+                }
+                // --- FIN NUEVO DISEÑO ---
             }
 
             update() {
@@ -557,10 +573,10 @@
             planet = new Planet();
 
             score = 0;
-            enemiesToDefeat = 50; // <-- CAMBIO: Misión más larga
+            enemiesToDefeat = 50; 
             gameFrame = 0;
-            enemySpawnTimer = 0; // Reiniciar timer de spawn
-            enemySpawnInterval = 100; // Reiniciar intervalo
+            enemySpawnTimer = 0; 
+            enemySpawnInterval = 100; 
             
             updateUI();
 
@@ -569,7 +585,6 @@
                 stars.push(new Star());
             }
 
-            // spawnEnemies(15); // <-- ELIMINADO
             // Empezar con 3 enemigos
             for (let i = 0; i < 3; i++) {
                 spawnEnemy();
@@ -623,13 +638,6 @@
                 if (enemyBullets[i].z < 1 || enemyBullets[i].y > canvasHeight) enemyBullets.splice(i, 1);
             }
 
-            // Enemigos
-            /* ELIMINADO
-            if (enemies.length === 0 && score < enemiesToDefeat) {
-                spawnEnemies(15); // <-- CAMBIO: Siguiente oleada más grande
-            }
-            */
-            
             // --- NUEVO Sistema de Spawn Gradual ---
             enemySpawnTimer++;
             // Si ha pasado el tiempo Y no hay demasiados enemigos Y no hemos llegado al total de la misión
@@ -683,11 +691,11 @@
                              bullets.splice(i, 1);
                         }
                         
-                        enemies[j].health--; // <-- CAMBIO: Restar vida
+                        enemies[j].health--; 
                         
                         if (enemies[j].health <= 0) {
                             // Destruir enemigo
-                            createExplosion(enemies[j].x + enemies[j].width/2, enemies[j].y + enemies[j].height/2, enemies[j].color);
+                            createExplosion(enemies[j].x + enemies[j].width/2, enemies[j].y + enemies[j].height/2, '#FFA500'); // Color explosión
                             enemies.splice(j, 1);
                             
                             score++;
@@ -703,7 +711,7 @@
             for (let i = enemyBullets.length - 1; i >= 0; i--) {
                 // Solo colisionar si la bala está "cerca" (z < 10)
                 if (enemyBullets[i].z < 10 && collisionDetect(enemyBullets[i], player)) {
-                    createExplosion(player.x + player.width/2, player.y + player.height/2, player.color);
+                    createExplosion(player.x + player.width/2, player.y + player.height/2, '#C0C0C0');
                     enemyBullets.splice(i, 1);
                     playerHit();
                     break;
@@ -714,8 +722,8 @@
              for (let i = enemies.length - 1; i >= 0; i--) {
                 // Solo colisionar si el enemigo está "cerca" (z < 5)
                 if (enemies[i].z < 5 && collisionDetect(enemies[i], player)) {
-                    createExplosion(player.x + player.width/2, player.y + player.height/2, player.color);
-                    createExplosion(enemies[i].x + enemies[i].width/2, enemies[i].y + enemies[i].height/2, enemies[i].color);
+                    createExplosion(player.x + player.width/2, player.y + player.height/2, '#C0C0C0');
+                    createExplosion(enemies[i].x + enemies[i].width/2, enemies[i].y + enemies[i].height/2, '#FFA500');
                     enemies.splice(i, 1);
                     playerHit();
                     break;
@@ -833,6 +841,36 @@
 
         // --- 5. INICIALIZACIÓN Y EVENTOS ---
 
+        // --- Lógica de carga de imágenes ---
+        function onImageLoad() {
+            imagesLoaded++;
+            if (imagesLoaded === totalImages) {
+                console.log("Todas las imágenes cargadas.");
+                // Habilitar el botón de inicio
+                startMissionButton.disabled = false;
+                startMissionButton.textContent = "¡Iniciar Misión!";
+            }
+        }
+
+        playerImage.onload = onImageLoad;
+        enemyImage.onload = onImageLoad;
+
+        // Manejar errores de carga
+        playerImage.onerror = () => {
+            console.error("Error cargando la imagen del jugador. Usando placeholder.");
+            onImageLoad(); // Contar como cargada para no bloquear el juego
+        };
+        enemyImage.onerror = () => {
+            console.error("Error cargando la imagen del enemigo. Usando placeholder.");
+            onImageLoad(); // Contar como cargada
+        };
+
+        // Deshabilitar botón de inicio mientras cargan
+        startMissionButton.disabled = true;
+        startMissionButton.textContent = "Cargando Recursos...";
+        // --- Fin Lógica de carga ---
+
+
         function resizeCanvas() {
             canvasWidth = window.innerWidth;
             canvasHeight = window.innerHeight;
@@ -864,8 +902,10 @@
 
         // Iniciar Misión desde el Hangar
         startMissionButton.addEventListener('click', () => {
-            initMission(); // Prepara la misión
-            setGameState('playing');
+            if (imagesLoaded === totalImages) { // Doble chequeo por si acaso
+                initMission(); // Prepara la misión
+                setGameState('playing');
+            }
         });
         
         // Volver al Hangar
@@ -875,7 +915,7 @@
                 lives = 5;
                 resources = 0;
                 playerShootCooldown = 15;
-                fireRateCost = 100; // <-- CAMBIO: Costo inicial
+                fireRateCost = 100; 
             }
             // (Si ganas, ya recibiste las recompensas)
             setGameState('hangar');
@@ -894,7 +934,7 @@
             if (resources >= fireRateCost) {
                 resources -= fireRateCost;
                 playerShootCooldown = Math.max(5, playerShootCooldown - 2); // Mejora (reduce el cooldown)
-                fireRateCost = Math.floor(fireRateCost * 1.8); // <-- CAMBIO: Aumenta más el costo
+                fireRateCost = Math.floor(fireRateCost * 1.8); 
                 updateUI(); // Actualiza la UI
             }
         });
@@ -907,7 +947,4 @@
 
 </body>
 </html>
-
-
-
 
