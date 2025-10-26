@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Space Force 1: Maverick</title>
     <!-- Usamos Tailwind CSS para estilizar la UI -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -15,6 +15,8 @@
             margin: 0;
             padding: 0;
             overflow: hidden;
+            /* Evitar scroll y zoom táctil */
+            touch-action: none;
         }
         
         #game-container {
@@ -184,6 +186,48 @@
             box-shadow: none;
         }
 
+        /* --- INICIO: NUEVOS ESTILOS PARA CONTROLES MÓVILES --- */
+        #mobile-controls {
+            display: none; /* Oculto por defecto en escritorio */
+            pointer-events: none; /* No interactuar */
+        }
+
+        .mobile-btn {
+            background-color: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            font-weight: 600;
+            border-radius: 1.5rem; /* Más redondeado */
+            width: 4rem;
+            height: 4rem;
+            user-select: none; /* Evitar selección de texto */
+            -webkit-user-select: none; /* Safari */
+            pointer-events: all;
+            backdrop-filter: blur(5px);
+            font-size: 1.5rem;
+            line-height: 1;
+        }
+
+        .mobile-btn:active {
+            background-color: rgba(255, 255, 255, 0.4);
+        }
+        
+        #btn-fire {
+            width: 6rem;
+            height: 6rem;
+            border-radius: 9999px; /* Círculo */
+            font-size: 1.25rem;
+        }
+
+        /* Mostrar en dispositivos táctiles (sin hover) */
+        @media (max-width: 1024px) { /* <-- CAMBIO: Basado en tamaño de pantalla */
+            #mobile-controls {
+                display: block;
+                pointer-events: all;
+            }
+        }
+        /* --- FIN: NUEVOS ESTILOS PARA CONTROLES MÓVILES --- */
+
     </style>
 </head>
 <body>
@@ -247,6 +291,28 @@
                 <p>La nave ha sido destruida. Los reptilianos han ganado esta batalla.</p>
                 <button id="go-to-hangar-lose" class="modal-button">Volver al Hangar (Reiniciar)</button>
             </div>
+
+            <!-- --- INICIO: NUEVOS CONTROLES MÓVILES --- -->
+            <div id="mobile-controls">
+                <!-- Controles Izquierdos (Movimiento) -->
+                <div id="controls-left" class="fixed bottom-8 left-8 grid grid-cols-3 gap-2 w-48">
+                    <div></div> <!-- Celda vacía -->
+                    <button id="btn-up" class="mobile-btn col-start-2">▲</button>
+                    <div></div> <!-- Celda vacía -->
+                    <button id="btn-left" class="mobile-btn">◄</button>
+                    <div></div> <!-- Celda vacía -->
+                    <button id="btn-right" class="mobile-btn">►</button>
+                    <div></div> <!-- Celda vacía -->
+                    <button id="btn-down" class="mobile-btn col-start-2">▼</button>
+                </div>
+
+                <!-- Controles Derechos (Disparo) -->
+                <div id="controls-right" class="fixed bottom-12 right-10">
+                    <button id="btn-fire" class="mobile-btn">FUEGO</button>
+                </div>
+            </div>
+            <!-- --- FIN: NUEVOS CONTROLES MÓVILES --- -->
+
         </div>
     </div>
 
@@ -284,8 +350,9 @@
         // --- NUEVAS VARIABLES PARA IMÁGENES ---
         let playerImage = new Image();
         let enemyImage = new Image();
+        let planetImage = new Image(); // <-- NUEVO
         let imagesLoaded = 0;
-        const totalImages = 2;
+        const totalImages = 3; // <-- CAMBIO (antes 2)
 
         // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         // +++ ¡SOCIO! AQUÍ PONES LAS RUTAS A TUS IMÁGENES PNG +++
@@ -294,6 +361,7 @@
         
         playerImage.src = 'images/maverick.png'; // <-- CAMBIA ESTO
         enemyImage.src = 'images/reptil.png';   // <-- CAMBIA ESTO
+        planetImage.src = 'images/gaia.png';   // <-- NUEVO: CAMBIA ESTO
         
         // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         
@@ -324,13 +392,22 @@
             constructor() {
                 this.y = 150;
                 this.radius = 100;
-                this.color = '#4a90e2'; // Planeta azul
+                this.image = planetImage; // <-- NUEVO
             }
             draw() {
-                ctx.fillStyle = this.color;
-                ctx.beginPath();
-                ctx.arc(canvasWidth / 2, this.y, this.radius, 0, Math.PI * 2);
-                ctx.fill();
+                let x = (canvasWidth / 2) - this.radius;
+                let y = this.y - this.radius; // 150 - 100 = 50
+                let size = this.radius * 2;
+
+                if (this.image && this.image.complete) {
+                    ctx.drawImage(this.image, x, y, size, size);
+                } else {
+                    // Fallback si la imagen no carga
+                    ctx.fillStyle = '#4a90e2';
+                    ctx.beginPath();
+                    ctx.arc(canvasWidth / 2, this.y, this.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
             }
         }
         
@@ -859,6 +936,7 @@
 
         playerImage.onload = onImageLoad;
         enemyImage.onload = onImageLoad;
+        planetImage.onload = onImageLoad; // <-- NUEVO
 
         // Manejar errores de carga
         playerImage.onerror = () => {
@@ -867,6 +945,10 @@
         };
         enemyImage.onerror = () => {
             console.error("Error cargando la imagen del enemigo. Usando placeholder.");
+            onImageLoad(); // Contar como cargada
+        };
+        planetImage.onerror = () => { // <-- NUEVO
+            console.error("Error cargando la imagen del planeta. Usando fallback.");
             onImageLoad(); // Contar como cargada
         };
 
@@ -902,6 +984,40 @@
         window.addEventListener('keydown', (e) => { keys[e.key.toLowerCase()] = true; });
         window.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
         window.addEventListener('resize', resizeCanvas);
+        
+        // --- INICIO: NUEVOS EVENTOS PARA CONTROLES TÁCTILES ---
+        
+        // Obtener los botones
+        const btnUp = document.getElementById('btn-up');
+        const btnDown = document.getElementById('btn-down');
+        const btnLeft = document.getElementById('btn-left');
+        const btnRight = document.getElementById('btn-right');
+        const btnFire = document.getElementById('btn-fire');
+
+        // Función reutilizable para manejar eventos táctiles
+        function handleTouch(e, key, isPressed) {
+            e.preventDefault(); // Prevenir scroll/zoom
+            keys[key] = isPressed;
+        }
+
+        // Asignar eventos de toque
+        btnUp.addEventListener('touchstart', (e) => handleTouch(e, 'w', true), { passive: false });
+        btnUp.addEventListener('touchend', (e) => handleTouch(e, 'w', false));
+
+        btnDown.addEventListener('touchstart', (e) => handleTouch(e, 's', true), { passive: false });
+        btnDown.addEventListener('touchend', (e) => handleTouch(e, 's', false));
+
+        btnLeft.addEventListener('touchstart', (e) => handleTouch(e, 'a', true), { passive: false });
+        btnLeft.addEventListener('touchend', (e) => handleTouch(e, 'a', false));
+
+        btnRight.addEventListener('touchstart', (e) => handleTouch(e, 'd', true), { passive: false });
+        btnRight.addEventListener('touchend', (e) => handleTouch(e, 'd', false));
+
+        btnFire.addEventListener('touchstart', (e) => handleTouch(e, ' ', true), { passive: false });
+        btnFire.addEventListener('touchend', (e) => handleTouch(e, ' ', false));
+        
+        // --- FIN: NUEVOS EVENTOS PARA CONTROLES TÁCTILES ---
+
 
         // --- Eventos de Botones de la UI ---
 
@@ -953,6 +1069,7 @@
 
 </body>
 </html>
+
 
 
 
