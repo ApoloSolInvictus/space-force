@@ -200,6 +200,7 @@
             
             <!-- Estadísticas -->
             <div id="game-stats" class="text-white">
+                <div>Puntaje: <span id="total-score-count">0</span></div>
                 <div>Vidas: <span id="lives-count">5</span></div>
                 <div>Recursos: <span id="resources-count">0</span></div>
                 <div>Planeta Liberado: <span id="score-count">0</span>%</div>
@@ -259,6 +260,7 @@
         const livesCountEl = document.getElementById('lives-count');
         const resourcesCountEl = document.getElementById('resources-count');
         const scoreCountEl = document.getElementById('score-count');
+        const totalScoreCountEl = document.getElementById('total-score-count'); // <-- NUEVO
         
         const hangarScreen = document.getElementById('hangar-screen');
         const upgradeScreen = document.getElementById('upgrade-screen');
@@ -299,6 +301,7 @@
         let lives = 5;
         let resources = 0;
         let score, enemiesToDefeat;
+        let totalScore = 0; // <-- NUEVO
         
         // Mejoras
         let playerShootCooldown = 15; // Valor inicial
@@ -699,6 +702,7 @@
                             enemies.splice(j, 1);
                             
                             score++;
+                            totalScore++; // <-- NUEVO
                             updateScore();
                         }
                         
@@ -774,6 +778,7 @@
         
         // Actualizar toda la UI
         function updateUI() {
+            totalScoreCountEl.textContent = totalScore; // <-- NUEVO
             livesCountEl.textContent = lives;
             resourcesCountEl.textContent = resources;
             let liberationPercentage = Math.floor((score / enemiesToDefeat) * 100);
@@ -914,6 +919,7 @@
                 // Si perdiste, reinicia stats básicos
                 lives = 5;
                 resources = 0;
+                totalScore = 0; // <-- NUEVO
                 playerShootCooldown = 15;
                 fireRateCost = 100; 
             }
@@ -947,4 +953,5 @@
 
 </body>
 </html>
+
 
