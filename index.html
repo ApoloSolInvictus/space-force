@@ -435,7 +435,7 @@
         playerImage.src = 'images/maverick.png'; // <-- CAMBIA ESTO
         enemyImage.src = 'images/reptil.png';   // <-- CAMBIA ESTO
         planetImage.src = 'images/gaia.png'; // <-- CAMBIA ESTO
-        hangarImage.src = 'images/hangar.jpg'; // <-- CAMBIA ESTO
+        hangarImage.src = 'images/hangar.png'; // <-- CAMBIA ESTO
         // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         
         // Estadísticas del jugador
@@ -1033,49 +1033,49 @@
 
 
         // --- Lógica de carga de imágenes ---
-        function onImageLoad() {
+        function onImageLoadCheck() { // Renombrada de onImageLoad
             imagesLoaded++;
             if (imagesLoaded === totalImages) {
-                console.log("Todas las imágenes cargadas.");
-
-                // Aplicar fondo del hangar
-                // ELIMINADO: hangarBackgroundEl.style.backgroundImage = `url('${hangarImage.src}')`;
+                console.log("Todas las imágenes (o sus fallbacks) están listas.");
                 
-                // NUEVO: Insertar la imagen en su contenedor
-                if (hangarImage.complete && hangarImage.naturalHeight !== 0) {
-                    hangarImageContainer.innerHTML = `<img src="${hangarImage.src}" alt="Fondo del Hangar">`;
-                } else {
-                    console.error("La imagen del hangar cargó pero está corrupta o no disponible.");
-                }
-
-
                 // Habilitar el botón de inicio
                 startMissionButton.disabled = false;
                 startMissionButton.textContent = "¡Iniciar Misión!";
             }
         }
 
-        playerImage.onload = onImageLoad;
-        enemyImage.onload = onImageLoad;
-        planetImage.onload = onImageLoad; 
-        hangarImage.onload = onImageLoad;
-
-        // Manejar errores de carga
+        // Jugador
+        playerImage.onload = onImageLoadCheck;
         playerImage.onerror = () => { 
             console.error("Error cargando la imagen del jugador. Usando fallback.");
-            onImageLoad(); // Contar como cargada para no bloquear
+            onImageLoadCheck(); // Contar como cargada para no bloquear
         };
+        
+        // Enemigo
+        enemyImage.onload = onImageLoadCheck;
         enemyImage.onerror = () => { 
             console.error("Error cargando la imagen del enemigo. Usando fallback.");
-            onImageLoad(); 
+            onImageLoadCheck(); 
         };
+        
+        // Planeta
+        planetImage.onload = onImageLoadCheck;
         planetImage.onerror = () => { 
             console.error("Error cargando la imagen del planeta. Usando fallback.");
-            onImageLoad();
+            onImageLoadCheck();
+        };
+
+        // HANGAR (¡Lógica separada!)
+        hangarImage.onload = () => {
+            console.log("Imagen del hangar cargada correctamente.");
+            // NUEVO: Insertar la imagen en su contenedor SÓLO si carga bien
+            hangarImageContainer.innerHTML = `<img src="${hangarImage.src}" alt="Fondo del Hangar">`;
+            onImageLoadCheck(); // Llama al contador global
         };
         hangarImage.onerror = () => { 
-            console.error("Error cargando la imagen del hangar. Usando fallback.");
-            onImageLoad();
+            console.error("Error cargando la imagen del hangar. No se mostrará fondo.");
+            // No insertamos nada en el innerHTML, se queda el fondo negro del CSS
+            onImageLoadCheck(); // Llama al contador global
         };
         
         // --- Fin Lógica de carga ---
@@ -1190,4 +1190,5 @@
 
 </body>
 </html>
+
 
