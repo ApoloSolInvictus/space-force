@@ -89,19 +89,7 @@
             border-top: 2px solid rgba(74, 144, 226, 0.4);
         }
 
-        /* --- FONDO DE HANGAR PANTALLA COMPLETA --- */
-        #hangar-background {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-size: cover;
-            background-position: center;
-            z-index: 2; /* Encima del canvas, debajo de la UI */
-            display: none; /* Oculto por defecto */
-        }
-        /* --- FIN --- */
+        /* ELIMINADO: #hangar-background */
 
 
         /* Contenedor para las estadísticas */
@@ -132,7 +120,7 @@
             border-radius: 16px;
             padding: 2rem 3rem;
             text-align: center;
-            z-index: 20;
+            z-index: 20; /* Z-INDEX MÁS ALTO (TEXTO Y BOTONES) */
             pointer-events: all;
             display: none;
             flex-direction: column;
@@ -142,6 +130,30 @@
             box-shadow: 0 10px 30px rgba(74, 144, 226, 0.3);
             backdrop-filter: blur(10px);
         }
+
+        /* --- NUEVO: MODAL SOLO PARA IMAGEN DE HANGAR --- */
+        #hangar-image-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90vw; /* 90% ancho de pantalla */
+            height: 90vh; /* 90% alto de pantalla */
+            z-index: 19; /* JUSTO DETRÁS del modal de texto */
+            pointer-events: all;
+            display: none; /* Oculto por defecto */
+            background: #000; /* Fondo negro por si falla la imagen */
+            border-radius: 16px; /* Bordes redondeados */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); /* Sombra */
+            overflow: hidden; /* Para que la imagen respete los bordes */
+        }
+        #hangar-image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Rellena el contenedor sin distorsión */
+        }
+        /* --- FIN --- */
+
 
         .modal h1 {
             font-size: 2.5rem;
@@ -160,7 +172,8 @@
         
         /* --- ESTILOS DEL HANGAR --- */
         #hangar-screen {
-            /* Ya no necesita fondo, usa el de .modal */
+            /* Ahora este modal es semi-transparente por defecto */
+            /* Y se verá sobre el #hangar-image-container */
         }
         /* Para que el texto se lea bien sobre el fondo */
         #hangar-screen h1, #hangar-screen p {
@@ -289,8 +302,7 @@
         <!-- El Canvas donde se renderiza todo el juego -->
         <canvas id="game-canvas"></canvas>
 
-        <!-- Fondo del Hangar -->
-        <div id="hangar-background"></div>
+        <!-- ELIMINADO: Fondo del Hangar -->
         
         <!-- El HUD de la cabina -->
         <div id="cockpit-hud"></div>
@@ -304,6 +316,11 @@
                 <div>Recursos: <span id="resources-count">0</span></div>
                 <div>Planeta Liberado: <span id="score-count">0</span>%</div>
                 <div>Puntaje: <span id="total-score-count">0</span></div>
+            </div>
+
+            <!-- NUEVO: Contenedor para la IMAGEN del Hangar -->
+            <div id="hangar-image-container">
+                <!-- La imagen se insertará aquí con JavaScript -->
             </div>
 
             <!-- Pantalla de HANGAR (Menú Principal) -->
@@ -367,7 +384,8 @@
 
         // Elementos de la UI
         const cockpitHud = document.getElementById('cockpit-hud');
-        const hangarBackgroundEl = document.getElementById('hangar-background');
+        // const hangarBackgroundEl = document.getElementById('hangar-background'); // ELIMINADO
+        const hangarImageContainer = document.getElementById('hangar-image-container'); // <-- NUEVO
         const livesCountEl = document.getElementById('lives-count');
         const resourcesCountEl = document.getElementById('resources-count');
         const scoreCountEl = document.getElementById('score-count');
@@ -417,7 +435,7 @@
         playerImage.src = 'images/maverick.png'; // <-- CAMBIA ESTO
         enemyImage.src = 'images/reptil.png';   // <-- CAMBIA ESTO
         planetImage.src = 'images/gaia.png'; // <-- CAMBIA ESTO
-        hangarImage.src = 'images/hangar.jpeg'; // <-- CAMBIA ESTO
+        hangarImage.src = 'images/hangar.jpg'; // <-- CAMBIA ESTO
         // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         
         // Estadísticas del jugador
@@ -449,13 +467,9 @@
                 this.radius = 100;
                 this.color = '#4a90e2'; // Planeta azul (fallback)
                 this.image = planetImage;
-                // this.loaded = false; // <-- ELIMINADO
-                
-                // ELIMINADO: planetImage.onload = () => { this.loaded = true; }; // <-- ¡ESTE ERA EL ERROR!
             }
             draw() {
                 // Dibujar la imagen si cargó, si no, el círculo
-                // Revisamos directamente si la imagen está lista
                 if (this.image.complete && this.image.naturalHeight !== 0) {
                     ctx.drawImage(this.image, 
                                   canvasWidth / 2 - this.radius, 
@@ -933,19 +947,21 @@
 
             // Ocultar todas las modales
             hangarScreen.style.display = 'none';
+            hangarImageContainer.style.display = 'none'; // <-- NUEVO: Ocultar modal de imagen
             upgradeScreen.style.display = 'none';
             dialogueScreen.style.display = 'none';
             winScreen.style.display = 'none';
             gameOverScreen.style.display = 'none';
             cockpitHud.style.display = 'none'; // Ocultar cabina
-            hangarBackgroundEl.style.display = 'none'; // Ocultar fondo hangar
+            // hangarBackgroundEl.style.display = 'none'; // ELIMINADO
 
             if (gameState === 'playing') {
                 cockpitHud.style.display = 'block'; // Mostrar cabina
                 gameLoop(); // Iniciar el bucle
             } else if (gameState === 'hangar') {
                 hangarScreen.style.display = 'flex';
-                hangarBackgroundEl.style.display = 'block'; // Mostrar fondo hangar
+                hangarImageContainer.style.display = 'block'; // <-- NUEVO: Mostrar modal de imagen
+                // hangarBackgroundEl.style.display = 'block'; // ELIMINADO
                 updateUI(); // Actualizar stats y botones
             } else if (gameState === 'upgrades') {
                 upgradeScreen.style.display = 'flex';
@@ -1023,7 +1039,15 @@
                 console.log("Todas las imágenes cargadas.");
 
                 // Aplicar fondo del hangar
-                hangarBackgroundEl.style.backgroundImage = `url('${hangarImage.src}')`;
+                // ELIMINADO: hangarBackgroundEl.style.backgroundImage = `url('${hangarImage.src}')`;
+                
+                // NUEVO: Insertar la imagen en su contenedor
+                if (hangarImage.complete && hangarImage.naturalHeight !== 0) {
+                    hangarImageContainer.innerHTML = `<img src="${hangarImage.src}" alt="Fondo del Hangar">`;
+                } else {
+                    console.error("La imagen del hangar cargó pero está corrupta o no disponible.");
+                }
+
 
                 // Habilitar el botón de inicio
                 startMissionButton.disabled = false;
@@ -1166,6 +1190,4 @@
 
 </body>
 </html>
-
-
 
