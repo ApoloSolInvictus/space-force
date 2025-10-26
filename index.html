@@ -417,7 +417,7 @@
         playerImage.src = 'images/maverick.png'; // <-- CAMBIA ESTO
         enemyImage.src = 'images/reptil.png';   // <-- CAMBIA ESTO
         planetImage.src = 'images/gaia.png'; // <-- CAMBIA ESTO
-        hangarImage.src = 'images/hangar.jpeg'; // <-- CAMBIA ESTO
+        hangarImage.src = 'images/hangar.jpg'; // <-- CAMBIA ESTO
         // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         
         // Estadísticas del jugador
@@ -449,13 +449,14 @@
                 this.radius = 100;
                 this.color = '#4a90e2'; // Planeta azul (fallback)
                 this.image = planetImage;
-                this.loaded = false; // Controlar si la imagen cargó
+                // this.loaded = false; // <-- ELIMINADO
                 
-                planetImage.onload = () => { this.loaded = true; }; // Se usa el onload de la imagen global
+                // ELIMINADO: planetImage.onload = () => { this.loaded = true; }; // <-- ¡ESTE ERA EL ERROR!
             }
             draw() {
                 // Dibujar la imagen si cargó, si no, el círculo
-                if (this.loaded && this.image.complete && this.image.naturalHeight !== 0) {
+                // Revisamos directamente si la imagen está lista
+                if (this.image.complete && this.image.naturalHeight !== 0) {
                     ctx.drawImage(this.image, 
                                   canvasWidth / 2 - this.radius, 
                                   this.y - this.radius, 
