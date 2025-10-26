@@ -107,51 +107,62 @@
         }
         #game-stats div { margin-bottom: 5px; }
 
-        /* Estilo para las pantallas modales (TEXTO Y BOTONES) */
+        /* Estilo para las pantallas modales (AHORA PANTALLA COMPLETA) */
         .modal {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: rgba(10, 20, 40, 0.9); /* <-- Estilo sombra */
-            border: 2px solid #4a90e2;
-            border-radius: 16px;
+            top: 0;
+            left: 0;
+            width: 100vw;  /* Pantalla completa */
+            height: 100vh; /* Pantalla completa */
+            transform: none; /* No necesita centrado */
+            
+            /* El fondo de imagen se aplica con JS */
+            background-color: #000; /* Fallback negro */
+            background-size: cover;
+            background-position: center;
+            
+            border: none;
+            border-radius: 0;
             padding: 2rem 3rem;
+            box-sizing: border-box;
             text-align: center;
-            z-index: 20; /* Z-INDEX MÁS ALTO (TEXTO Y BOTONES) */
+            z-index: 20; /* Encima de todo */
             pointer-events: all;
             display: none;
             flex-direction: column;
             align-items: center;
-            width: 90%;
-            max-width: 500px;
-            box-shadow: 0 10px 30px rgba(74, 144, 226, 0.3);
-            backdrop-filter: blur(10px);
+            justify-content: center; /* Centrar contenido verticalmente */
+            width: 100%;
+            max-width: 100%;
+            box-shadow: none;
+            overflow: hidden; /* Evitar scroll */
         }
 
-        /* --- POPUP SOLO PARA IMAGEN DE HANGAR --- */
-        #hangar-image-container {
+        /* Capa oscura superpuesta (el "estilo sombra") */
+        .modal::before {
+            content: '';
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 90vw; /* 90% ancho de pantalla */
-            height: 90vh; /* 90% alto de pantalla */
-            z-index: 19; /* JUSTO DETRÁS del modal de texto */
-            pointer-events: all;
-            display: none; /* Oculto por defecto */
-            background: #000; /* Fondo negro por si falla la imagen */
-            border-radius: 16px; /* Bordes redondeados */
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); /* Sombra */
-            overflow: hidden; /* Para que la imagen respete los bordes */
-            border: 2px solid #4a90e2; /* <-- AÑADIDO: Borde azul, igual que el modal */
-        }
-        #hangar-image-container img {
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
-            object-fit: cover; /* Rellena el contenedor sin distorsión */
+            background-color: rgba(10, 20, 40, 0.85); /* <-- El fondo oscuro */
+            backdrop-filter: blur(5px);
+            z-index: 1; /* Detrás del contenido */
         }
-        /* --- FIN --- */
+        
+        /* Contenido del modal (texto, botones) */
+        .modal > * {
+            position: relative; /* Para que se ponga sobre el ::before */
+            z-index: 2; /* Encima de la capa oscura */
+            width: 90%;
+            max-width: 500px; /* Mantenemos ancho máximo para legibilidad */
+        }
+        /* Los botones dentro del modal */
+         .modal button {
+            width: 80%;
+            max-width: 400px;
+         }
 
 
         .modal h1 {
@@ -160,6 +171,7 @@
             color: #fff;
             margin-bottom: 1rem;
             letter-spacing: -1px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
         }
 
         .modal p {
@@ -167,18 +179,8 @@
             color: #eee;
             margin-bottom: 1.5rem;
             line-height: 1.6;
-        }
-        
-        /* --- ESTILOS DEL HANGAR --- */
-        #hangar-screen {
-            /* Este modal es semi-transparente y se verá sobre #hangar-image-container */
-            background-color: rgba(10, 20, 40, 0.8); /* Un poco más transparente */
-        }
-        /* Para que el texto se lea bien sobre el fondo */
-        #hangar-screen h1, #hangar-screen p {
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
         }
-        /* --- FIN --- */
         
         .modal .dialogue-text {
             font-size: 1.2rem;
@@ -188,6 +190,8 @@
             padding-left: 1rem;
             text-align: left;
             margin-bottom: 2rem;
+            background-color: rgba(0,0,0,0.2);
+            border-radius: 8px;
         }
 
         /* Botón principal */
@@ -202,7 +206,7 @@
             cursor: pointer;
             transition: all 0.2s ease;
             box-shadow: 0 4px 15px rgba(74, 144, 226, 0.4);
-            width: 80%;
+            /* width: 80%; (definido en .modal > *) */
             margin-top: 0.5rem;
             user-select: none; /* Evitar selección en móviles */
         }
@@ -315,11 +319,6 @@
                 <div>Puntaje: <span id="total-score-count">0</span></div>
             </div>
 
-            <!-- Contenedor para la IMAGEN del Hangar (El popup de fondo) -->
-            <div id="hangar-image-container">
-                <!-- La imagen se insertará aquí con JavaScript -->
-            </div>
-
             <!-- Pantalla de HANGAR (El popup de texto y botones) -->
             <div id="hangar-screen" class="modal" style="display: flex;">
                 <h1>HANGAR DE MAVERICK</h1>
@@ -381,7 +380,7 @@
 
         // Elementos de la UI
         const cockpitHud = document.getElementById('cockpit-hud');
-        const hangarImageContainer = document.getElementById('hangar-image-container'); // <-- El popup de imagen
+        // const hangarImageContainer = document.getElementById('hangar-image-container'); // <-- ¡BORRADO!
         const livesCountEl = document.getElementById('lives-count');
         const resourcesCountEl = document.getElementById('resources-count');
         const scoreCountEl = document.getElementById('score-count');
@@ -429,10 +428,10 @@
         // +   ¡SOCIO, AQUÍ CAMBIA LAS URLS POR LAS DE TUS IMÁGENES!   +
         // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         // Asegúrate que estas rutas sean correctas en tu servidor
-        playerImage.src = 'images/maverick.png'; // Ruta de ejemplo
-        enemyImage.src = 'images/reptil.png';   // Ruta de ejemplo
-        planetImage.src = 'images/gaia.png'; // Ruta de ejemplo
-        hangarImage.src = 'images/hangar.png'; // Ruta de ejemplo
+        playerImage.src = 'images/maverick.png';
+        enemyImage.src = 'images/reptil.png';
+        planetImage.src = 'images/gaia.png';
+        hangarImage.src = 'images/hangar.png';
         // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         
         // Estadísticas del jugador
@@ -944,7 +943,7 @@
 
             // Ocultar todas las modales
             hangarScreen.style.display = 'none';
-            hangarImageContainer.style.display = 'none'; // Ocultar popup de imagen
+            // hangarImageContainer.style.display = 'none'; // <-- ¡BORRADO!
             upgradeScreen.style.display = 'none';
             dialogueScreen.style.display = 'none';
             winScreen.style.display = 'none';
@@ -956,7 +955,7 @@
                 gameLoop(); // Iniciar el bucle
             } else if (gameState === 'hangar') {
                 hangarScreen.style.display = 'flex';
-                hangarImageContainer.style.display = 'block'; // Mostrar popup de imagen
+                // hangarImageContainer.style.display = 'block'; // <-- ¡BORRADO!
                 updateUI(); // Actualizar stats y botones
             } else if (gameState === 'upgrades') {
                 upgradeScreen.style.display = 'flex';
@@ -1033,43 +1032,46 @@
             if (imagesLoaded === totalImages) {
                 console.log("Todas las imágenes (o sus fallbacks) están listas.");
                 
+                // ¡AQUÍ ESTÁ LA MAGIA! Aplicar el fondo a todos los modales
+                const modalScreens = [hangarScreen, upgradeScreen, dialogueScreen, winScreen, gameOverScreen];
+                
+                if (hangarImage.complete && hangarImage.naturalHeight !== 0) {
+                    console.log("Aplicando fondo de hangar a los modales.");
+                    modalScreens.forEach(screen => {
+                        screen.style.backgroundImage = `url('${hangarImage.src}')`;
+                    });
+                } else {
+                     console.warn("La imagen del hangar no cargó. Se usará fondo negro.");
+                }
+
                 // Habilitar el botón de inicio
                 startMissionButton.disabled = false;
                 startMissionButton.textContent = "¡Iniciar Misión!";
             }
         }
 
-        // Jugador
+        // Asignar los listeners de carga
         playerImage.onload = onImageLoadCheck;
         playerImage.onerror = () => { 
             console.error("Error cargando la imagen del jugador. Usando fallback.");
             onImageLoadCheck(); // Contar como cargada para no bloquear
         };
         
-        // Enemigo
         enemyImage.onload = onImageLoadCheck;
         enemyImage.onerror = () => { 
             console.error("Error cargando la imagen del enemigo. Usando fallback.");
             onImageLoadCheck(); 
         };
         
-        // Planeta
         planetImage.onload = onImageLoadCheck;
         planetImage.onerror = () => { 
             console.error("Error cargando la imagen del planeta. Usando fallback.");
             onImageLoadCheck();
         };
 
-        // HANGAR (Lógica separada)
-        hangarImage.onload = () => {
-            console.log("Imagen del hangar cargada correctamente.");
-            // Insertar la imagen en su contenedor SÓLO si carga bien
-            hangarImageContainer.innerHTML = `<img src="${hangarImage.src}" alt="Fondo del Hangar">`;
-            onImageLoadCheck(); // Llama al contador global
-        };
+        hangarImage.onload = onImageLoadCheck;
         hangarImage.onerror = () => { 
             console.error("Error cargando la imagen del hangar. No se mostrará fondo.");
-            // No insertamos nada, se queda el fondo negro del CSS
             onImageLoadCheck(); // Llama al contador global
         };
         
