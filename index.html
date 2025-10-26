@@ -6,6 +6,7 @@
     <title>Space Force 1: Maverick</title>
     <!-- Usamos Tailwind CSS para estilizar la UI -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script> <!-- NUEVO: Tone.js para audio -->
     <style>
         /* Fuente Inter, fondo negro */
         body {
@@ -347,6 +348,11 @@
         let canvasWidth, canvasHeight;
         let player, bullets, enemyBullets, enemies, particles, stars, planet;
         
+        // --- NUEVAS VARIABLES DE AUDIO (TONE.JS) ---
+        let laserSound, enemyLaserSound, explosionSound, playerHitSound, gameOverSound;
+        let audioReady = false;
+        // --- FIN VARIABLES DE AUDIO ---
+        
         // --- NUEVAS VARIABLES PARA IMÁGENES ---
         let playerImage = new Image();
         let enemyImage = new Image();
@@ -502,6 +508,7 @@
             shoot() {
                 // Disparo central que viaja "hacia adelante"
                 bullets.push(new Projectile(this.x + this.width / 2, this.y, 6, 15, '#4a90e2', -15));
+                if (audioReady) laserSound.triggerAttackRelease('C6', '0.05'); // <-- NUEVO: Sonido láser
             }
         }
 
@@ -563,6 +570,7 @@
             shoot() {
                 // Las balas enemigas también escalan
                 enemyBullets.push(new Projectile(this.x + this.width / 2, this.y + this.height, 4, 8, '#DC143C', 0, this.z));
+                if (audioReady) enemyLaserSound.triggerAttackRelease('G5', '0.05'); // <-- NUEVO: Sonido láser enemigo
             }
         }
         
@@ -776,6 +784,7 @@
                         if (enemies[j].health <= 0) {
                             // Destruir enemigo
                             createExplosion(enemies[j].x + enemies[j].width/2, enemies[j].y + enemies[j].height/2, '#FFA500'); // Color explosión
+                            if (audioReady) explosionSound.triggerAttackRelease('0.1'); // <-- NUEVO: Sonido explosión
                             enemies.splice(j, 1);
                             
                             score++;
@@ -837,6 +846,7 @@
         // Jugador golpeado
         function playerHit() {
             lives--;
+            if (audioReady) playerHitSound.triggerAttackRelease('C3', '0.1'); // <-- NUEVO: Sonido golpe
             updateUI();
             if (lives <= 0) {
                 setGameState('over');
@@ -901,6 +911,7 @@
                 resources += 100;
             } else if (gameState === 'over') {
                 gameOverScreen.style.display = 'flex';
+                if (audioReady) gameOverSound.triggerAttackRelease('C4', '0.5'); // <-- NUEVO: Sonido Game Over
             }
         }
 
@@ -922,6 +933,40 @@
         }
 
         // --- 5. INICIALIZACIÓN Y EVENTOS ---
+
+        // --- NUEVA: Inicializar Audio (Tone.js) ---
+        function initAudio() {
+            // Disparo del jugador (agudo y rápido)
+            laserSound = new Tone.Synth({
+                oscillator: { type: 'triangle' },
+                envelope: { attack: 0.01, decay: 0.05, sustain: 0, release: 0.1 }
+            }).toDestination();
+
+            // Disparo enemigo (un poco más grave)
+            enemyLaserSound = new Tone.Synth({
+                oscillator: { type: 'sawtooth' },
+                envelope: { attack: 0.01, decay: 0.05, sustain: 0, release: 0.1 }
+            }).toDestination();
+
+            // Explosión (ruido)
+            explosionSound = new Tone.NoiseSynth({
+                noise: { type: 'white' },
+                envelope: { attack: 0.01, decay: 0.1, sustain: 0, release: 0.1 }
+            }).toDestination();
+            
+            // Golpe al jugador (grave)
+            playerHitSound = new Tone.Synth({
+                oscillator: { type: 'square' },
+                envelope: { attack: 0.01, decay: 0.1, sustain: 0, release: 0.1 }
+            }).toDestination();
+            
+            // Game Over (descendente)
+            gameOverSound = new Tone.Synth().toDestination();
+            
+            console.log("Sistema de audio inicializado.");
+        }
+        // --- Fin initAudio ---
+
 
         // --- Lógica de carga de imágenes ---
         function onImageLoad() {
@@ -1022,8 +1067,21 @@
         // --- Eventos de Botones de la UI ---
 
         // Iniciar Misión desde el Hangar
-        startMissionButton.addEventListener('click', () => {
+        startMissionButton.addEventListener('click', async () => { // <-- CAMBIO: async
             if (imagesLoaded === totalImages) { // Doble chequeo por si acaso
+                
+                // --- NUEVO: Iniciar Contexto de Audio ---
+                if (!audioReady) {
+                    try {
+                        await Tone.start();
+                        audioReady = true;
+                        console.log("AudioContext iniciado.");
+                    } catch (e) {
+                        console.error("Error al iniciar AudioContext:", e);
+                    }
+                }
+                // --- Fin Audio ---
+                
                 initMission(); // Prepara la misión
                 setGameState('playing');
             }
@@ -1064,12 +1122,10 @@
 
         // Configuración inicial
         resizeCanvas();
+        initAudio(); // <-- NUEVO
         setGameState('hangar'); // Empezar en el Hangar
     </script>
 
 </body>
 </html>
-
-
-
 
