@@ -89,8 +89,6 @@
             border-top: 2px solid rgba(74, 144, 226, 0.4);
         }
 
-        /* ELIMINADO: #hangar-background */
-
 
         /* Contenedor para las estadísticas */
         #game-stats {
@@ -109,7 +107,7 @@
         }
         #game-stats div { margin-bottom: 5px; }
 
-        /* Estilo para las pantallas modales */
+        /* Estilo para las pantallas modales (TEXTO Y BOTONES) */
         .modal {
             position: absolute;
             top: 50%;
@@ -131,7 +129,7 @@
             backdrop-filter: blur(10px);
         }
 
-        /* --- NUEVO: MODAL SOLO PARA IMAGEN DE HANGAR --- */
+        /* --- POPUP SOLO PARA IMAGEN DE HANGAR --- */
         #hangar-image-container {
             position: absolute;
             top: 50%;
@@ -146,6 +144,7 @@
             border-radius: 16px; /* Bordes redondeados */
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); /* Sombra */
             overflow: hidden; /* Para que la imagen respete los bordes */
+            border: 2px solid #4a90e2; /* <-- AÑADIDO: Borde azul, igual que el modal */
         }
         #hangar-image-container img {
             width: 100%;
@@ -172,8 +171,8 @@
         
         /* --- ESTILOS DEL HANGAR --- */
         #hangar-screen {
-            /* Ahora este modal es semi-transparente por defecto */
-            /* Y se verá sobre el #hangar-image-container */
+            /* Este modal es semi-transparente y se verá sobre #hangar-image-container */
+            background-color: rgba(10, 20, 40, 0.8); /* Un poco más transparente */
         }
         /* Para que el texto se lea bien sobre el fondo */
         #hangar-screen h1, #hangar-screen p {
@@ -301,8 +300,6 @@
     <div id="game-container">
         <!-- El Canvas donde se renderiza todo el juego -->
         <canvas id="game-canvas"></canvas>
-
-        <!-- ELIMINADO: Fondo del Hangar -->
         
         <!-- El HUD de la cabina -->
         <div id="cockpit-hud"></div>
@@ -318,12 +315,12 @@
                 <div>Puntaje: <span id="total-score-count">0</span></div>
             </div>
 
-            <!-- NUEVO: Contenedor para la IMAGEN del Hangar -->
+            <!-- Contenedor para la IMAGEN del Hangar (El popup de fondo) -->
             <div id="hangar-image-container">
                 <!-- La imagen se insertará aquí con JavaScript -->
             </div>
 
-            <!-- Pantalla de HANGAR (Menú Principal) -->
+            <!-- Pantalla de HANGAR (El popup de texto y botones) -->
             <div id="hangar-screen" class="modal" style="display: flex;">
                 <h1>HANGAR DE MAVERICK</h1>
                 <p>Bienvenido de nuevo, Piloto. El 'Planeta X' sigue bajo asedio. ¿Cuál es la orden?</p>
@@ -384,14 +381,13 @@
 
         // Elementos de la UI
         const cockpitHud = document.getElementById('cockpit-hud');
-        // const hangarBackgroundEl = document.getElementById('hangar-background'); // ELIMINADO
-        const hangarImageContainer = document.getElementById('hangar-image-container'); // <-- NUEVO
+        const hangarImageContainer = document.getElementById('hangar-image-container'); // <-- El popup de imagen
         const livesCountEl = document.getElementById('lives-count');
         const resourcesCountEl = document.getElementById('resources-count');
         const scoreCountEl = document.getElementById('score-count');
         const totalScoreCountEl = document.getElementById('total-score-count'); // Puntaje total
         
-        const hangarScreen = document.getElementById('hangar-screen');
+        const hangarScreen = document.getElementById('hangar-screen'); // El popup de texto/botones
         const upgradeScreen = document.getElementById('upgrade-screen');
         const dialogueScreen = document.getElementById('dialogue-screen');
         const winScreen = document.getElementById('win-screen');
@@ -432,10 +428,11 @@
         // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         // +   ¡SOCIO, AQUÍ CAMBIA LAS URLS POR LAS DE TUS IMÁGENES!   +
         // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        playerImage.src = 'images/maverick.png'; // <-- CAMBIA ESTO
-        enemyImage.src = 'images/reptil.png';   // <-- CAMBIA ESTO
-        planetImage.src = 'images/gaia.png'; // <-- CAMBIA ESTO
-        hangarImage.src = 'images/hangar.png'; // <-- CAMBIA ESTO
+        // Asegúrate que estas rutas sean correctas en tu servidor
+        playerImage.src = 'images/maverick.png'; // Ruta de ejemplo
+        enemyImage.src = 'images/reptil.png';   // Ruta de ejemplo
+        planetImage.src = 'images/gaia.png'; // Ruta de ejemplo
+        hangarImage.src = 'images/hangar.png'; // Ruta de ejemplo
         // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         
         // Estadísticas del jugador
@@ -947,21 +944,19 @@
 
             // Ocultar todas las modales
             hangarScreen.style.display = 'none';
-            hangarImageContainer.style.display = 'none'; // <-- NUEVO: Ocultar modal de imagen
+            hangarImageContainer.style.display = 'none'; // Ocultar popup de imagen
             upgradeScreen.style.display = 'none';
             dialogueScreen.style.display = 'none';
             winScreen.style.display = 'none';
             gameOverScreen.style.display = 'none';
             cockpitHud.style.display = 'none'; // Ocultar cabina
-            // hangarBackgroundEl.style.display = 'none'; // ELIMINADO
 
             if (gameState === 'playing') {
                 cockpitHud.style.display = 'block'; // Mostrar cabina
                 gameLoop(); // Iniciar el bucle
             } else if (gameState === 'hangar') {
                 hangarScreen.style.display = 'flex';
-                hangarImageContainer.style.display = 'block'; // <-- NUEVO: Mostrar modal de imagen
-                // hangarBackgroundEl.style.display = 'block'; // ELIMINADO
+                hangarImageContainer.style.display = 'block'; // Mostrar popup de imagen
                 updateUI(); // Actualizar stats y botones
             } else if (gameState === 'upgrades') {
                 upgradeScreen.style.display = 'flex';
@@ -1033,7 +1028,7 @@
 
 
         // --- Lógica de carga de imágenes ---
-        function onImageLoadCheck() { // Renombrada de onImageLoad
+        function onImageLoadCheck() { 
             imagesLoaded++;
             if (imagesLoaded === totalImages) {
                 console.log("Todas las imágenes (o sus fallbacks) están listas.");
@@ -1065,16 +1060,16 @@
             onImageLoadCheck();
         };
 
-        // HANGAR (¡Lógica separada!)
+        // HANGAR (Lógica separada)
         hangarImage.onload = () => {
             console.log("Imagen del hangar cargada correctamente.");
-            // NUEVO: Insertar la imagen en su contenedor SÓLO si carga bien
+            // Insertar la imagen en su contenedor SÓLO si carga bien
             hangarImageContainer.innerHTML = `<img src="${hangarImage.src}" alt="Fondo del Hangar">`;
             onImageLoadCheck(); // Llama al contador global
         };
         hangarImage.onerror = () => { 
             console.error("Error cargando la imagen del hangar. No se mostrará fondo.");
-            // No insertamos nada en el innerHTML, se queda el fondo negro del CSS
+            // No insertamos nada, se queda el fondo negro del CSS
             onImageLoadCheck(); // Llama al contador global
         };
         
@@ -1190,5 +1185,4 @@
 
 </body>
 </html>
-
 
