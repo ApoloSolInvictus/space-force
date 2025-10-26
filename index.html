@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Space Force 1: Maverick</title>
+    <title>Space Force 1: Maverick (Pseudo-3D)</title>
     <!-- Usamos Tailwind CSS para estilizar la UI -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script> <!-- NUEVO: Tone.js para audio -->
@@ -141,6 +141,19 @@
             margin-bottom: 1.5rem;
             line-height: 1.6;
         }
+
+        /* --- NUEVO: FONDO Y TEXTO PARA EL HANGAR --- */
+        #hangar-screen {
+            background-color: #0a1428; /* Fallback por si la imagen tarda */
+            background-size: cover;
+            background-position: center;
+        }
+        /* Para que el texto se lea bien sobre la imagen */
+        #hangar-screen h1, #hangar-screen p {
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
+        }
+        /* --- FIN DE FONDO HANGAR --- */
+
         .modal .dialogue-text {
             font-size: 1.2rem;
             color: #a7d7ff;
@@ -356,9 +369,10 @@
         // --- NUEVAS VARIABLES PARA IMÁGENES ---
         let playerImage = new Image();
         let enemyImage = new Image();
-        let planetImage = new Image(); // <-- NUEVO
+        let planetImage = new Image(); 
+        let hangarImage = new Image(); // <-- NUEVO
         let imagesLoaded = 0;
-        const totalImages = 3; // <-- CAMBIO (antes 2)
+        const totalImages = 4; // <-- CAMBIO (antes 3)
 
         // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         // +++ ¡SOCIO! AQUÍ PONES LAS RUTAS A TUS IMÁGENES PNG +++
@@ -367,7 +381,8 @@
         
         playerImage.src = 'images/maverick.png'; // <-- CAMBIA ESTO
         enemyImage.src = 'images/reptil.png';   // <-- CAMBIA ESTO
-        planetImage.src = 'images/gaia.png';   // <-- NUEVO: CAMBIA ESTO
+        planetImage.src = 'images/gaia.png';   // <-- CAMBIA ESTO
+        hangarImage.src = 'images/hangar.jpg';   // <-- NUEVO: CAMBIA ESTO
         
         // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         
@@ -973,6 +988,11 @@
             imagesLoaded++;
             if (imagesLoaded === totalImages) {
                 console.log("Todas las imágenes cargadas.");
+
+                // --- ¡NUEVO! Aplicar fondo del hangar ---
+                hangarScreen.style.backgroundImage = `url('${hangarImage.src}')`;
+                // --- Fin de fondo del hangar ---
+
                 // Habilitar el botón de inicio
                 startMissionButton.disabled = false;
                 startMissionButton.textContent = "¡Iniciar Misión!";
@@ -981,7 +1001,8 @@
 
         playerImage.onload = onImageLoad;
         enemyImage.onload = onImageLoad;
-        planetImage.onload = onImageLoad; // <-- NUEVO
+        planetImage.onload = onImageLoad; 
+        hangarImage.onload = onImageLoad; // <-- NUEVO
 
         // Manejar errores de carga
         playerImage.onerror = () => {
@@ -992,8 +1013,12 @@
             console.error("Error cargando la imagen del enemigo. Usando placeholder.");
             onImageLoad(); // Contar como cargada
         };
-        planetImage.onerror = () => { // <-- NUEVO
+        planetImage.onerror = () => { 
             console.error("Error cargando la imagen del planeta. Usando fallback.");
+            onImageLoad(); // Contar como cargada
+        };
+        hangarImage.onerror = () => { // <-- NUEVO
+            console.error("Error cargando la imagen del hangar. Usando fallback.");
             onImageLoad(); // Contar como cargada
         };
 
@@ -1128,4 +1153,6 @@
 
 </body>
 </html>
+
+
 
