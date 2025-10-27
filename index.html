@@ -146,7 +146,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(10, 20, 40, 0.05); /* <-- CAMBIO: Era 0.85, ahora 0.7 */
+            background-color: rgba(10, 20, 40, 0.1); /* <-- CAMBIO: Era 0.85, ahora 0.7 */
             backdrop-filter: blur(5px);
             z-index: 1; /* Detrás del contenido */
         }
@@ -157,6 +157,15 @@
             z-index: 2; /* Encima de la capa oscura */
             width: 90%;
             max-width: 500px; /* Mantenemos ancho máximo para legibilidad */
+        }
+        /* Estilo para el nuevo logo */
+        .game-logo {
+            width: 70%; /* Ancho del logo */
+            max-width: 350px;
+            height: auto;
+            margin-bottom: 1rem;
+            z-index: 2;
+            position: relative;
         }
         /* Los botones dentro del modal */
          .modal button {
@@ -325,6 +334,7 @@
 
             <!-- Pantalla de HANGAR (El popup de texto y botones) -->
             <div id="hangar-screen" class="modal" style="display: flex;">
+                <img id="logo-hangar" class="game-logo" alt="Logo del Juego" src="">
                 <h1>HANGAR DE MAVERICK</h1>
                 <p>Bienvenido de nuevo, Piloto. El 'Planeta X' sigue bajo asedio. ¿Cuál es la orden?</p>
                 <button id="start-mission-button" class="modal-button" disabled>Cargando Recursos...</button>
@@ -352,6 +362,7 @@
 
             <!-- Pantalla de Victoria -->
             <div id="win-screen" class="modal">
+                <img id="logo-win" class="game-logo" alt="Logo del Juego" src="">
                 <h1>¡Planeta Liberado!</h1>
                 <p>¡Gran trabajo, piloto! Has recuperado el planeta.<br> <strong class="text-lg text-green-400">+5 Vidas y +100 Recursos Obtenidos.</strong></p>
                 <button id="go-to-hangar-win" class="modal-button">Volver al Hangar</button>
@@ -396,6 +407,10 @@
         const winScreen = document.getElementById('win-screen');
         const gameOverScreen = document.getElementById('game-over-screen');
         
+        // Logos
+        const logoHangar = document.getElementById('logo-hangar');
+        const logoWin = document.getElementById('logo-win');
+
         // Botones UI
         const startMissionButton = document.getElementById('start-mission-button');
         const goToUpgradesButton = document.getElementById('go-to-upgrades-button');
@@ -425,8 +440,9 @@
         let enemyImage = new Image();
         let planetImage = new Image(); 
         let hangarImage = new Image();
+        let logoImage = new Image(); // <-- 1. NUEVA IMAGEN
         let imagesLoaded = 0;
-        const totalImages = 4; // 4 imágenes: player, enemy, planet, hangar
+        const totalImages = 5; // <-- 2. AHORA SON 5 IMÁGENES
 
         // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         // +   ¡SOCIO, AQUÍ CAMBIA LAS URLS POR LAS DE TUS IMÁGENES!   +
@@ -436,6 +452,7 @@
         enemyImage.src = 'https://spaceforce1.profcr.com/images/reptil.png';
         planetImage.src = 'https://spaceforce1.profcr.com/images/gaia.png';
         hangarImage.src = 'https://spaceforce1.profcr.com/images/hangar.png';
+        logoImage.src = 'images/sp1.png'; // <-- 3. PONE TU LOGO AQUÍ
         // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         
         // Estadísticas del jugador
@@ -452,6 +469,10 @@
         let gameState = 'hangar'; // 'hangar', 'playing', 'won', 'over', 'upgrades', 'dialogue'
         let keys = {};
         let gameFrame = 0;
+
+        // Variables de Responsividad
+        let bottomGameMargin = 20; // Margen inferior (para PC)
+        let horizonY; // Posición Y del horizonte
 
         // Variables de Dificultad
         let enemySpawnTimer = 0;
@@ -508,7 +529,7 @@
             draw() {
                 // Proyección 2.5D: Mover desde el centro hacia afuera y escalar
                 let screenX = (this.x / this.z) + (canvasWidth / 2);
-                let screenY = (this.y / this.z) + (canvasHeight / 2);
+                let screenY = (this.y / this.z) + horizonY; // <-- CAMBIO: Usar horizonY
                 let radius = (1 - this.z) * 2; // Más grande cuanto más cerca (z=1)
                 
                 // Si está fuera de la pantalla, no dibujar
@@ -565,7 +586,8 @@
                 if (this.x < 0) this.x = 0;
                 if (this.x + this.width > canvasWidth) this.x = canvasWidth - this.width;
                 if (this.y < canvasHeight * 0.6) this.y = canvasHeight * 0.6; // Límite superior
-                if (this.y + this.height > canvasHeight - 20) this.y = canvasHeight - this.height - 20; // Límite inferior
+                // CAMBIO: Usar el margen inferior dinámico
+                if (this.y + this.height > canvasHeight - bottomGameMargin) this.y = canvasHeight - this.height - bottomGameMargin; 
 
                 // Disparar
                 if (keys[' '] && (gameFrame - this.lastShotFrame) > playerShootCooldown) {
@@ -611,7 +633,7 @@
                 this.height = this.baseHeight * scale;
                 
                 this.x = (this.baseX * scale) + (canvasWidth / 2) - this.width / 2;
-                this.y = (this.baseY * scale) + (canvasHeight / 2) - this.height / 2;
+                this.y = (this.baseY * scale) + horizonY - this.height / 2; // <-- CAMBIO: Usar horizonY
             }
 
             draw() {
@@ -1048,6 +1070,19 @@
                      console.warn("La imagen del hangar no cargó. Se usará fondo negro.");
                 }
 
+                // 4. APLICAR LOGO SI CARGÓ
+                if (logoImage.complete && logoImage.naturalHeight !== 0) {
+                    logoHangar.src = logoImage.src;
+                    logoWin.src = logoImage.src;
+                    logoHangar.style.display = 'block';
+                    logoWin.style.display = 'block';
+                } else {
+                    // Ocultar si no cargó
+                    logoHangar.style.display = 'none';
+                    logoWin.style.display = 'none';
+                }
+
+
                 // Habilitar el botón de inicio
                 startMissionButton.disabled = false;
                 startMissionButton.textContent = "¡Iniciar Misión!";
@@ -1078,6 +1113,13 @@
             console.error("Error cargando la imagen del hangar. No se mostrará fondo.");
             onImageLoadCheck(); // Llama al contador global
         };
+
+        // 5. HANDLERS PARA EL LOGO
+        logoImage.onload = onImageLoadCheck;
+        logoImage.onerror = () => { 
+            console.error("Error cargando la imagen del logo. No se mostrará.");
+            onImageLoadCheck(); // Llama al contador global
+        };
         
         // --- Fin Lógica de carga ---
 
@@ -1088,6 +1130,20 @@
             canvas.width = canvasWidth;
             canvas.height = canvasHeight;
             
+            // --- INICIO CAMBIOS RESPONSIVOS ---
+
+            // 1. Definir el margen inferior para controles
+            if (window.innerWidth <= 1024) { 
+                bottomGameMargin = 100; // Reserva 100px para controles en móvil
+            } else { 
+                bottomGameMargin = 20; // Margen normal en PC
+            }
+
+            // 2. Definir el horizonte (para arreglar el "largo")
+            horizonY = canvasHeight * 0.45; // 45% desde el tope (en lugar de 50%)
+
+            // --- FIN CAMBIOS RESPONSIVOS ---
+
             // Reiniciar estrellas
             if(gameState === 'playing' || gameState === 'hangar') {
                  stars = [];
