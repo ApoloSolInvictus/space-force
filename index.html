@@ -2,13 +2,12 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <!-- Meta tag importante para móviles: deshabilita el zoom -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Space Force 1: Maverick</title>
-    <!-- Usamos Tailwind CSS para estilizar la UI -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Tone.js para audio -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <!-- Tone.js para Sonido -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <style>
         /* Fuente Inter, fondo negro */
         body {
@@ -18,8 +17,6 @@
             margin: 0;
             padding: 0;
             overflow: hidden;
-            /* Evitar scroll y zoom táctil */
-            touch-action: none;
         }
         
         #game-container {
@@ -107,38 +104,31 @@
         }
         #game-stats div { margin-bottom: 5px; }
 
-        /* Estilo para las pantallas modales (AHORA PANTALLA COMPLETA) */
+        /* Estilo para las pantallas modales (AHORA FULLSCREEN) */
         .modal {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100vw;  /* Pantalla completa */
-            height: 100vh; /* Pantalla completa */
-            transform: none; /* No necesita centrado */
-            
-            /* El fondo de imagen se aplica con JS */
-            background-color: #000; /* Fallback negro */
-            background-size: cover;
+            top: 0; /* Fullscreen */
+            left: 0; /* Fullscreen */
+            width: 100vw; /* Fullscreen */
+            height: 100vh; /* Fullscreen */
+            transform: none; /* No centrar */
+            background-size: cover; /* Fondo de hangar */
             background-position: center;
-            
-            border: none;
-            border-radius: 0;
-            padding: 2rem 3rem;
-            box-sizing: border-box;
-            text-align: center;
-            z-index: 20; /* Encima de todo */
+            border: none; /* Sin borde */
+            border-radius: 0; /* Sin bordes redondeados */
+            padding: 2rem;
+            box-sizing: border-box; /* Incluir padding */
+            z-index: 20;
             pointer-events: all;
             display: none;
             flex-direction: column;
+            justify-content: center; /* Centrado vertical */
             align-items: center;
-            justify-content: center; /* Centrar contenido verticalmente */
-            width: 100%;
-            max-width: 100%;
-            box-shadow: none;
-            overflow: hidden; /* Evitar scroll */
+            box-shadow: none; /* Sin sombra */
+            backdrop-filter: none; /* Sin blur directo */
         }
-
-        /* Capa oscura superpuesta (el "estilo sombra") */
+        
+        /* Capa oscura SOBRE la imagen de fondo, pero DEBAJO del texto */
         .modal::before {
             content: '';
             position: absolute;
@@ -146,17 +136,19 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(10, 20, 40, 0.1); /* <-- CAMBIO: Era 0.85, ahora 0.7 */
+            background-color: rgba(10, 20, 40, 0.7); /* Más transparente */
             backdrop-filter: blur(5px);
             z-index: 1; /* Detrás del contenido */
         }
         
-        /* Contenido del modal (texto, botones) */
+        /* Todo el contenido del modal (texto, botones) */
         .modal > * {
             position: relative; /* Para que se ponga sobre el ::before */
             z-index: 2; /* Encima de la capa oscura */
-            width: 90%;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5); /* Sombra de texto para legibilidad */
             max-width: 500px; /* Mantenemos ancho máximo para legibilidad */
+            width: 90%;
+            text-align: center;
         }
         /* Estilo para el nuevo logo */
         .game-logo {
@@ -167,12 +159,6 @@
             z-index: 2;
             position: relative;
         }
-        /* Los botones dentro del modal */
-         .modal button {
-            width: 80%;
-            max-width: 400px;
-         }
-
 
         .modal h1 {
             font-size: 2.5rem;
@@ -180,7 +166,6 @@
             color: #fff;
             margin-bottom: 1rem;
             letter-spacing: -1px;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
         }
 
         .modal p {
@@ -188,9 +173,7 @@
             color: #eee;
             margin-bottom: 1.5rem;
             line-height: 1.6;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
         }
-        
         .modal .dialogue-text {
             font-size: 1.2rem;
             color: #a7d7ff;
@@ -199,8 +182,6 @@
             padding-left: 1rem;
             text-align: left;
             margin-bottom: 2rem;
-            background-color: rgba(0,0,0,0.2);
-            border-radius: 8px;
         }
 
         /* Botón principal */
@@ -215,9 +196,10 @@
             cursor: pointer;
             transition: all 0.2s ease;
             box-shadow: 0 4px 15px rgba(74, 144, 226, 0.4);
-            /* width: 80%; (definido en .modal > *) */
+            width: 80%;
             margin-top: 0.5rem;
-            user-select: none; /* Evitar selección en móviles */
+            z-index: 2;
+            position: relative;
         }
         .modal-button.secondary {
             background-color: #334155; /* Gris azulado */
@@ -239,7 +221,7 @@
             transform: none;
             box-shadow: none;
         }
-
+        
         /* --- CONTROLES MÓVILES --- */
         #mobile-controls {
             position: absolute;
@@ -308,7 +290,6 @@
                 display: flex;
             }
         }
-        /* --- FIN CONTROLES MÓVILES --- */
 
     </style>
 </head>
@@ -329,8 +310,22 @@
                 <div>Vidas: <span id="lives-count">5</span></div>
                 <div>Recursos: <span id="resources-count">0</span></div>
                 <div>Planeta Liberado: <span id="score-count">0</span>%</div>
-                <div>Puntaje: <span id="total-score-count">0</span></div>
+                <div>Puntaje: <span id="total-score-count">0</span></div> <!-- Puntaje total -->
             </div>
+            
+            <!-- Controles Móviles -->
+            <div id="mobile-controls">
+                <div id="d-pad">
+                    <button id="btn-up" class="mobile-btn">▲</button>
+                    <button id="btn-left" class="mobile-btn">◄</button>
+                    <button id="btn-right" class="mobile-btn">►</button>
+                    <button id="btn-down" class="mobile-btn">▼</button>
+                </div>
+                <button id="fire-button" class="mobile-btn">FUEGO</button>
+            </div>
+
+
+            <!-- --- MODALES (AHORA FULLSCREEN) --- -->
 
             <!-- Pantalla de HANGAR (El popup de texto y botones) -->
             <div id="hangar-screen" class="modal" style="display: flex;">
@@ -375,16 +370,6 @@
                 <button id="go-to-hangar-lose" class="modal-button">Volver al Hangar (Reiniciar)</button>
             </div>
 
-            <!-- Controles Móviles -->
-            <div id="mobile-controls">
-                <div id="d-pad">
-                    <button id="btn-up" class="mobile-btn">&#8593;</button>
-                    <button id="btn-left" class="mobile-btn">&#8592;</button>
-                    <button id="btn-right" class="mobile-btn">&#8594;</button>
-                    <button id="btn-down" class="mobile-btn">&#8595;</button>
-                </div>
-                <button id="fire-button" class="mobile-btn">FUEGO</button>
-            </div>
         </div>
     </div>
 
@@ -395,7 +380,6 @@
 
         // Elementos de la UI
         const cockpitHud = document.getElementById('cockpit-hud');
-        // const hangarImageContainer = document.getElementById('hangar-image-container'); // <-- ¡BORRADO!
         const livesCountEl = document.getElementById('lives-count');
         const resourcesCountEl = document.getElementById('resources-count');
         const scoreCountEl = document.getElementById('score-count');
@@ -406,6 +390,8 @@
         const dialogueScreen = document.getElementById('dialogue-screen');
         const winScreen = document.getElementById('win-screen');
         const gameOverScreen = document.getElementById('game-over-screen');
+        // Array de todas las pantallas modales para aplicar el fondo
+        const modalScreens = [hangarScreen, upgradeScreen, dialogueScreen, winScreen, gameOverScreen];
         
         // Logos
         const logoHangar = document.getElementById('logo-hangar');
@@ -420,7 +406,7 @@
         const backToHangar2 = document.getElementById('back-to-hangar-2');
         const goToHangarWin = document.getElementById('go-to-hangar-win');
         const goToHangarLose = document.getElementById('go-to-hangar-lose');
-
+        
         // Botones Móviles
         const btnUp = document.getElementById('btn-up');
         const btnDown = document.getElementById('btn-down');
@@ -431,36 +417,39 @@
         let canvasWidth, canvasHeight;
         let player, bullets, enemyBullets, enemies, particles, stars, planet;
         
-        // --- VARIABLES DE AUDIO (TONE.JS) ---
-        let laserSound, enemyLaserSound, explosionSound, playerHitSound, gameOverSound;
+        // --- Audio con Tone.js ---
         let audioReady = false;
+        let laserSound, enemyLaserSound, explosionSound, playerHitSound, gameOverSound, backgroundMusic;
         
-        // --- VARIABLES PARA IMÁGENES ---
+        // --- Carga de Imágenes ---
         let playerImage = new Image();
         let enemyImage = new Image();
         let planetImage = new Image(); 
         let hangarImage = new Image();
-        let logoImage = new Image(); // <-- 1. NUEVA IMAGEN
+        let logoImage = new Image(); // Logo del juego
         let imagesLoaded = 0;
-        const totalImages = 5; // <-- 2. AHORA SON 5 IMÁGENES
+        const totalImages = 5; // 5 imágenes ahora
 
-        // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        // +   ¡SOCIO, AQUÍ CAMBIA LAS URLS POR LAS DE TUS IMÁGENES!   +
-        // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        // +   ¡SOCIO, AQUÍ CAMBIA LAS URLS POR LAS DE TUS IMÁGENES Y MÚSICA!   +
+        // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         // Asegúrate que estas rutas sean correctas en tu servidor
         playerImage.src = 'https://spaceforce1.profcr.com/images/maverick.png';
         enemyImage.src = 'https://spaceforce1.profcr.com/images/reptil.png';
         planetImage.src = 'https://spaceforce1.profcr.com/images/gaia.png';
         hangarImage.src = 'https://spaceforce1.profcr.com/images/hangar.png';
-        logoImage.src = 'images/sp1.png'; // <-- 3. PONE TU LOGO AQUÍ
-        // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        logoImage.src = 'images/sp1.png'; // <-- PONE TU LOGO AQUÍ
+        
+        // URL de la Música
+        const musicUrl = 'assets/Hollow.mp3'; // <-- ¡PONE TU URL DE "HOLLOW" AQUÍ!
+        
+        // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         
         // Estadísticas del jugador
         let lives = 5;
         let resources = 0;
-        let score; // % de liberación
-        let totalScore = 0; // Puntaje total (naves destruidas)
-        let enemiesToDefeat;
+        let totalScore = 0; // Puntaje total
+        let score, enemiesToDefeat;
         
         // Mejoras
         let playerShootCooldown = 15; // Valor inicial
@@ -479,7 +468,7 @@
         let enemySpawnInterval = 100; // Frames (approx 1.6s) para spawn
         let maxEnemiesOnScreen = 5; // Máximos enemigos a la vez
 
-        // --- 2. CLASES DEL JUEGO ---
+        // --- 2. CLASES DEL JUEGO (MODIFICADAS PARA PSEUDO-3D E IMÁGENES) ---
 
         // Clase del Planeta (Fondo)
         class Planet {
@@ -487,17 +476,21 @@
                 this.y = 150;
                 this.radius = 100;
                 this.color = '#4a90e2'; // Planeta azul (fallback)
-                this.image = planetImage;
+                this.image = planetImage; // Usar la imagen cargada
             }
             draw() {
-                // Dibujar la imagen si cargó, si no, el círculo
+                // Dibujar la imagen si cargó correctamente
                 if (this.image.complete && this.image.naturalHeight !== 0) {
+                    const aspect = this.image.naturalWidth / this.image.naturalHeight;
+                    const scaledHeight = this.radius * 2;
+                    const scaledWidth = scaledHeight * aspect;
                     ctx.drawImage(this.image, 
-                                  canvasWidth / 2 - this.radius, 
+                                  canvasWidth / 2 - scaledWidth / 2, 
                                   this.y - this.radius, 
-                                  this.radius * 2, 
-                                  this.radius * 2);
+                                  scaledWidth, 
+                                  scaledHeight);
                 } else {
+                    // Fallback al círculo azul
                     ctx.fillStyle = this.color;
                     ctx.beginPath();
                     ctx.arc(canvasWidth / 2, this.y, this.radius, 0, Math.PI * 2);
@@ -552,7 +545,7 @@
                 this.x = canvasWidth / 2 - this.width / 2;
                 this.y = canvasHeight - this.height - 30; // Fijo en la parte inferior
                 this.speed = 10;
-                this.image = playerImage;
+                this.image = playerImage; // Usar la imagen cargada
                 this.lastShotFrame = 0;
             }
 
@@ -561,23 +554,26 @@
                 if (this.image.complete && this.image.naturalHeight !== 0) {
                      ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
                 } else {
-                    // Fallback si la imagen no carga
-                    ctx.fillStyle = '#C0C0C0';
-                    ctx.fillRect(this.x, this.y, this.width, this.height);
+                    // Fallback (dibujo original)
+                    ctx.fillStyle = '#C0C0C0'; // Gris
+                    ctx.beginPath();
+                    ctx.moveTo(this.x + this.width / 2, this.y); // Punta
+                    ctx.lineTo(this.x, this.y + this.height * 0.8); // Ala izq
+                    ctx.lineTo(this.x + this.width / 2, this.y + this.height); // Centro atrás
+                    ctx.lineTo(this.x + this.width, this.y + this.height * 0.8); // Ala der
+                    ctx.closePath();
+                    ctx.fill();
                 }
-               
-                // Propulsores (se dibujan independientemente de la imagen)
-                ctx.fillStyle = '#4a90e2';
-                let thrusterWidth = this.width / 4;
-                let thrusterOffset = this.width / 6;
-                ctx.fillRect(this.x + thrusterOffset, this.y + this.height, thrusterWidth, 10 + Math.random() * 5);
-                ctx.fillRect(this.x + this.width - thrusterOffset - thrusterWidth, this.y + this.height, thrusterWidth, 10 + Math.random() * 5);
+
+                // Propulsor (si no está en la imagen)
+                // ctx.fillStyle = '#4a90e2';
+                // ctx.fillRect(this.x + this.width / 2 - this.width / 4, this.y + this.height, this.width / 2, 10);
             }
 
             update() {
                 if (keys['a'] || keys['ArrowLeft']) this.x -= this.speed;
                 if (keys['d'] || keys['ArrowRight']) this.x += this.speed;
-                // Movimiento vertical limitado
+                // Opcional: movimiento vertical limitado
                 if (keys['w'] || keys['ArrowUp']) this.y -= this.speed * 0.5;
                 if (keys['s'] || keys['ArrowDown']) this.y += this.speed * 0.5;
 
@@ -599,7 +595,7 @@
             shoot() {
                 // Disparo central que viaja "hacia adelante"
                 bullets.push(new Projectile(this.x + this.width / 2, this.y, 6, 15, '#4a90e2', -15));
-                if (audioReady) laserSound.triggerAttackRelease('C6', '0.05');
+                if (audioReady) laserSound.triggerAttackRelease("C5", "0.1"); // Sonido
             }
         }
 
@@ -618,9 +614,9 @@
                 
                 this.speed = Math.random() * 0.3 + 0.2; // Velocidad de acercamiento
                 this.image = enemyImage;
-                this.shootProbability = 0.008;
-                this.baseWidth = 35;
-                this.baseHeight = 30;
+                this.shootProbability = 0.008; // Ligeramente más agresivos
+                this.baseWidth = 40; // Ancho base (para escalar)
+                this.baseHeight = 35; // Alto base (para escalar)
                 this.health = 2;
             }
             
@@ -637,12 +633,21 @@
             }
 
             draw() {
+                 // Dibujar la imagen PNG escalada
                 if (this.image.complete && this.image.naturalHeight !== 0) {
                      ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
                 } else {
-                    // Fallback si la imagen no carga
-                    ctx.fillStyle = '#556677';
-                    ctx.fillRect(this.x, this.y, this.width, this.height);
+                    // Fallback (dibujo original)
+                    ctx.fillStyle = '#556677'; // Gris-azulado
+                    ctx.beginPath();
+                    ctx.moveTo(this.x, this.y); // Ala izq
+                    ctx.lineTo(this.x + this.width, this.y); // Ala der
+                    ctx.lineTo(this.x + this.width / 2, this.y + this.height); // Punta
+                    ctx.closePath();
+                    ctx.fill();
+                    // "Cabina" roja
+                    ctx.fillStyle = '#DC143C';
+                    ctx.fillRect(this.x + this.width/2 - this.width*0.1, this.y + this.height * 0.3, this.width*0.2, this.width*0.2);
                 }
             }
 
@@ -659,7 +664,7 @@
             shoot() {
                 // Las balas enemigas también escalan
                 enemyBullets.push(new Projectile(this.x + this.width / 2, this.y + this.height, 4, 8, '#DC143C', 0, this.z));
-                if (audioReady) enemyLaserSound.triggerAttackRelease('G5', '0.05');
+                if (audioReady) enemyLaserSound.triggerAttackRelease("G3", "0.2"); // Sonido
             }
         }
         
@@ -697,7 +702,7 @@
                     this.height = this.baseHeight * scale;
                     // Moverse desde el centro
                     this.x = (this.x - canvasWidth / 2) * (scale / (50 / (this.z + this.z_speed))) + (canvasWidth / 2);
-                    this.y = (this.y - canvasHeight / 2) * (scale / (50 / (this.z + this.z_speed))) + (canvasHeight / 2);
+                    this.y = (this.y - horizonY) * (scale / (50 / (this.z + this.z_speed))) + horizonY; // <-- CAMBIO: Usar horizonY
 
                 } else {
                     // Es una bala del jugador, solo sube
@@ -707,7 +712,7 @@
         }
 
 
-        // Clase para Partículas (Explosiones)
+        // Clase para Partículas (Explosiones) - Sin cambios
         class Particle {
             constructor(x, y, color) {
                 this.x = x;
@@ -739,6 +744,60 @@
 
         // --- 3. FUNCIONES DEL JUEGO ---
 
+        // --- Inicializar Audio (Tone.js) ---
+        function initAudio() {
+            if (audioReady) return;
+            try {
+                // 1. Láser del jugador (agudo, rápido)
+                laserSound = new Tone.Synth({
+                    oscillator: { type: 'sawtooth' },
+                    envelope: { attack: 0.01, decay: 0.05, sustain: 0, release: 0.1 }
+                }).toDestination();
+                laserSound.volume.value = -10;
+
+                // 2. Láser enemigo (grave, lento)
+                enemyLaserSound = new Tone.Synth({
+                    oscillator: { type: 'square' },
+                    envelope: { attack: 0.02, decay: 0.1, sustain: 0.1, release: 0.1 }
+                }).toDestination();
+                enemyLaserSound.volume.value = -12;
+
+                // 3. Explosión (ruido)
+                explosionSound = new Tone.NoiseSynth({
+                    noise: { type: 'white' },
+                    envelope: { attack: 0.01, decay: 0.3, sustain: 0, release: 0.2 }
+                }).toDestination();
+                explosionSound.volume.value = -5;
+                
+                // 4. Golpe al jugador (distorsión)
+                playerHitSound = new Tone.Synth({
+                    oscillator: { type: 'fmsquare' },
+                    envelope: { attack: 0.01, decay: 0.5, sustain: 0, release: 0.2 }
+                }).toDestination();
+                playerHitSound.volume.value = -3;
+                
+                // 5. Game Over (triste)
+                gameOverSound = new Tone.Synth({
+                     oscillator: { type: 'triangle' },
+                     envelope: { attack: 0.1, decay: 1.0, sustain: 0, release: 0.5 }
+                }).toDestination();
+                gameOverSound.volume.value = -2;
+
+                // 6. Música de Fondo (Configuración)
+                backgroundMusic = new Tone.Player({
+                    loop: true,
+                    volume: -10, // Más bajo que los efectos
+                }).toDestination();
+                
+                audioReady = true;
+                console.log("Sistema de audio inicializado.");
+            } catch (e) {
+                console.error("Error al inicializar Tone.js:", e);
+                audioReady = false;
+            }
+        }
+        // --- Fin initAudio ---
+
         // Inicializar/Reiniciar variables del juego
         function initMission() {
             player = new Player();
@@ -750,10 +809,10 @@
             planet = new Planet();
 
             score = 0;
-            enemiesToDefeat = 50; 
+            enemiesToDefeat = 50;
             gameFrame = 0;
-            enemySpawnTimer = 0;
-            enemySpawnInterval = 100;
+            enemySpawnTimer = 0; // Reiniciar timer de spawn
+            enemySpawnInterval = 100; // Reiniciar intervalo
             
             updateUI();
 
@@ -768,7 +827,7 @@
             }
         }
 
-        // Generar 1 enemigo
+        // Generar enemigos (Ahora solo genera 1)
         function spawnEnemy() {
             enemies.push(new Enemy());
         }
@@ -796,7 +855,8 @@
             for (let i = bullets.length - 1; i >= 0; i--) {
                 bullets[i].update();
                 bullets[i].draw();
-                if (bullets[i].y < 0) bullets.splice(i, 1);
+                // Si la bala sale por arriba o llega al horizonte
+                if (bullets[i].y < horizonY) bullets.splice(i, 1);
             }
             
             // Balas Enemigas
@@ -806,12 +866,14 @@
                 if (enemyBullets[i].z < 1 || enemyBullets[i].y > canvasHeight) enemyBullets.splice(i, 1);
             }
 
-            // --- Sistema de Spawn Gradual ---
+            // Enemigos
+            
+            // --- NUEVO Sistema de Spawn Gradual ---
             enemySpawnTimer++;
             // Si ha pasado el tiempo Y no hay demasiados enemigos Y no hemos llegado al total de la misión
             if (enemySpawnTimer > enemySpawnInterval && 
                 enemies.length < maxEnemiesOnScreen && 
-                (score + enemies.length) < enemiesToDefeat) { 
+                (score + enemies.length) < enemiesToDefeat) { // Asegura no spawnear de más
                 
                 spawnEnemy(); // Spawnea 1 enemigo
                 enemySpawnTimer = 0; // Reiniciar timer
@@ -832,7 +894,7 @@
                     enemies[i].draw();
                 }
                 
-                // Quitar enemigos que han pasado
+                // Quitar enemigos que han pasado (chocan con el jugador)
                 if (enemies[i].z < 1) {
                     enemies.splice(i, 1);
                 }
@@ -859,16 +921,16 @@
                              bullets.splice(i, 1);
                         }
                         
-                        enemies[j].health--;
+                        enemies[j].health--; // Restar vida
                         
                         if (enemies[j].health <= 0) {
                             // Destruir enemigo
-                            createExplosion(enemies[j].x + enemies[j].width/2, enemies[j].y + enemies[j].height/2, '#FFA500');
-                            if (audioReady) explosionSound.triggerAttackRelease('0.1');
+                            createExplosion(enemies[j].x + enemies[j].width/2, enemies[j].y + enemies[j].height/2, '#FFA500'); // Naranja
+                            if (audioReady) explosionSound.triggerAttackRelease("0.3"); // Sonido
                             enemies.splice(j, 1);
                             
                             score++;
-                            totalScore++; // <-- SUMA AL PUNTAJE TOTAL
+                            totalScore++; // Sumar al puntaje total
                             updateScore();
                         }
                         
@@ -893,7 +955,8 @@
                 // Solo colisionar si el enemigo está "cerca" (z < 5)
                 if (enemies[i].z < 5 && collisionDetect(enemies[i], player)) {
                     createExplosion(player.x + player.width/2, player.y + player.height/2, '#C0C0C0');
-                    createExplosion(enemies[i].x + enemies[i].width/2, enemies[i].y + enemies[i].height/2, '#556677');
+                    createExplosion(enemies[i].x + enemies[i].width/2, enemies[i].y + enemies[i].height/2, '#FFA500');
+                    if (audioReady) explosionSound.triggerAttackRelease("0.3"); // Sonido
                     enemies.splice(i, 1);
                     playerHit();
                     break;
@@ -918,15 +981,12 @@
             for (let i = 0; i < 15; i++) {
                 particles.push(new Particle(x, y, color));
             }
-            for (let i = 0; i < 5; i++) {
-                particles.push(new Particle(x, y, '#FFA500')); // Naranja
-            }
         }
         
         // Jugador golpeado
         function playerHit() {
             lives--;
-            if (audioReady) playerHitSound.triggerAttackRelease('C3', '0.1');
+            if (audioReady) playerHitSound.triggerAttackRelease("F#2", "0.5"); // Sonido
             updateUI();
             if (lives <= 0) {
                 setGameState('over');
@@ -937,7 +997,7 @@
         function updateScore() {
             let liberationPercentage = Math.floor((score / enemiesToDefeat) * 100);
             scoreCountEl.textContent = `${liberationPercentage}%`;
-            totalScoreCountEl.textContent = totalScore; // Actualiza puntaje total
+            totalScoreCountEl.textContent = totalScore; // Actualizar puntaje total
             
             if (score >= enemiesToDefeat) {
                 setGameState('won');
@@ -948,10 +1008,9 @@
         function updateUI() {
             livesCountEl.textContent = lives;
             resourcesCountEl.textContent = resources;
-            totalScoreCountEl.textContent = totalScore;
-            
             let liberationPercentage = Math.floor((score / enemiesToDefeat) * 100);
             scoreCountEl.textContent = `${liberationPercentage > 0 ? liberationPercentage : 0}%`;
+            totalScoreCountEl.textContent = totalScore;
             
             // Lógica del botón de mejora
             upgradeFireRateButton.textContent = `Mejorar Cadencia de Disparo (Costo: ${fireRateCost})`;
@@ -968,12 +1027,7 @@
             gameState = newState;
 
             // Ocultar todas las modales
-            hangarScreen.style.display = 'none';
-            // hangarImageContainer.style.display = 'none'; // <-- ¡BORRADO!
-            upgradeScreen.style.display = 'none';
-            dialogueScreen.style.display = 'none';
-            winScreen.style.display = 'none';
-            gameOverScreen.style.display = 'none';
+            modalScreens.forEach(screen => screen.style.display = 'none');
             cockpitHud.style.display = 'none'; // Ocultar cabina
 
             if (gameState === 'playing') {
@@ -981,7 +1035,6 @@
                 gameLoop(); // Iniciar el bucle
             } else if (gameState === 'hangar') {
                 hangarScreen.style.display = 'flex';
-                // hangarImageContainer.style.display = 'block'; // <-- ¡BORRADO!
                 updateUI(); // Actualizar stats y botones
             } else if (gameState === 'upgrades') {
                 upgradeScreen.style.display = 'flex';
@@ -990,12 +1043,11 @@
                 dialogueScreen.style.display = 'flex';
             } else if (gameState === 'won') {
                 winScreen.style.display = 'flex';
-                // Recompensas
                 lives += 5; 
                 resources += 100;
             } else if (gameState === 'over') {
                 gameOverScreen.style.display = 'flex';
-                if (audioReady) gameOverSound.triggerAttackRelease('C4', '0.5');
+                if (audioReady) gameOverSound.triggerAttackRelease("C2", "1.0"); // Sonido
             }
         }
 
@@ -1016,51 +1068,17 @@
             requestAnimationFrame(gameLoop);
         }
 
-        // --- 5. INICIALIZACIÓN Y EVENTOS ---
+        // --- 5. LÓGICA DE CARGA DE IMÁGENES ---
 
-        // --- Inicializar Audio (Tone.js) ---
-        function initAudio() {
-            // Disparo del jugador
-            laserSound = new Tone.Synth({
-                oscillator: { type: 'triangle' },
-                envelope: { attack: 0.01, decay: 0.05, sustain: 0, release: 0.1 }
-            }).toDestination();
-
-            // Disparo enemigo
-            enemyLaserSound = new Tone.Synth({
-                oscillator: { type: 'sawtooth' },
-                envelope: { attack: 0.01, decay: 0.05, sustain: 0, release: 0.1 }
-            }).toDestination();
-
-            // Explosión
-            explosionSound = new Tone.NoiseSynth({
-                noise: { type: 'white' },
-                envelope: { attack: 0.01, decay: 0.1, sustain: 0, release: 0.1 }
-            }).toDestination();
-            
-            // Golpe al jugador
-            playerHitSound = new Tone.Synth({
-                oscillator: { type: 'square' },
-                envelope: { attack: 0.01, decay: 0.1, sustain: 0, release: 0.1 }
-            }).toDestination();
-            
-            // Game Over
-            gameOverSound = new Tone.Synth().toDestination();
-            
-            console.log("Sistema de audio inicializado.");
-        }
-        // --- Fin initAudio ---
-
-
-        // --- Lógica de carga de imágenes ---
-        function onImageLoadCheck() { 
+        // Función de chequeo (se llama 5 veces)
+        function onImageLoadCheck() {
             imagesLoaded++;
+            console.log(`Imágenes cargadas: ${imagesLoaded}/${totalImages}`);
+            
             if (imagesLoaded === totalImages) {
-                console.log("Todas las imágenes (o sus fallbacks) están listas.");
+                console.log("¡Todos los recursos cargados! Listo para iniciar.");
                 
-                // ¡AQUÍ ESTÁ LA MAGIA! Aplicar el fondo a todos los modales
-                const modalScreens = [hangarScreen, upgradeScreen, dialogueScreen, winScreen, gameOverScreen];
-                
+                // 1. Aplicar fondo de hangar si cargó
                 if (hangarImage.complete && hangarImage.naturalHeight !== 0) {
                     console.log("Aplicando fondo de hangar a los modales.");
                     modalScreens.forEach(screen => {
@@ -1070,7 +1088,7 @@
                      console.warn("La imagen del hangar no cargó. Se usará fondo negro.");
                 }
 
-                // 4. APLICAR LOGO SI CARGÓ
+                // 2. APLICAR LOGO SI CARGÓ
                 if (logoImage.complete && logoImage.naturalHeight !== 0) {
                     logoHangar.src = logoImage.src;
                     logoWin.src = logoImage.src;
@@ -1089,40 +1107,40 @@
             }
         }
 
-        // Asignar los listeners de carga
+        // Asignar los handlers de carga
         playerImage.onload = onImageLoadCheck;
         playerImage.onerror = () => { 
-            console.error("Error cargando la imagen del jugador. Usando fallback.");
-            onImageLoadCheck(); // Contar como cargada para no bloquear
+            console.error("Error cargando imagen del JUGADOR. Usando fallback.");
+            onImageLoadCheck();
         };
-        
+
         enemyImage.onload = onImageLoadCheck;
         enemyImage.onerror = () => { 
-            console.error("Error cargando la imagen del enemigo. Usando fallback.");
-            onImageLoadCheck(); 
+            console.error("Error cargando imagen del ENEMIGO. Usando fallback.");
+            onImageLoadCheck();
         };
         
         planetImage.onload = onImageLoadCheck;
         planetImage.onerror = () => { 
-            console.error("Error cargando la imagen del planeta. Usando fallback.");
+            console.error("Error cargando la imagen del PLANETA. Usando fallback.");
             onImageLoadCheck();
         };
 
         hangarImage.onload = onImageLoadCheck;
         hangarImage.onerror = () => { 
-            console.error("Error cargando la imagen del hangar. No se mostrará fondo.");
+            console.error("Error cargando la imagen del HANGAR. No se mostrará fondo.");
             onImageLoadCheck(); // Llama al contador global
         };
 
-        // 5. HANDLERS PARA EL LOGO
         logoImage.onload = onImageLoadCheck;
         logoImage.onerror = () => { 
-            console.error("Error cargando la imagen del logo. No se mostrará.");
+            console.error("Error cargando la imagen del LOGO. No se mostrará.");
             onImageLoadCheck(); // Llama al contador global
         };
         
         // --- Fin Lógica de carga ---
 
+        // --- 6. INICIALIZACIÓN Y EVENTOS ---
 
         function resizeCanvas() {
             canvasWidth = window.innerWidth;
@@ -1153,7 +1171,7 @@
             }
             if(player) {
                 player.x = canvasWidth / 2 - player.width / 2;
-                player.y = canvasHeight - player.height - 30;
+                player.y = canvasHeight - player.height - bottomGameMargin; // Ajustar a nuevo margen
             }
             if(planet) {
                 planet.y = 150;
@@ -1161,44 +1179,74 @@
             }
         }
 
-        // Eventos de teclado
+        // Eventos de Teclado (PC)
         window.addEventListener('keydown', (e) => { keys[e.key.toLowerCase()] = true; });
         window.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
+        
+        // Evento de Redimensión
         window.addEventListener('resize', resizeCanvas);
 
         // --- Eventos de Botones de la UI ---
 
-        // Iniciar Misión desde el Hangar
+        // Iniciar Misión desde el Hangar (CON MÚSICA)
         startMissionButton.addEventListener('click', async () => {
-            if (imagesLoaded === totalImages) {
-                
-                // Iniciar Contexto de Audio (requiere interacción del usuario)
-                if (!audioReady) {
-                    try {
-                        await Tone.start();
-                        audioReady = true;
-                        console.log("AudioContext iniciado.");
-                    } catch (e) {
-                        console.error("Error al iniciar AudioContext:", e);
-                    }
+            // 1. Iniciar el contexto de audio (solo la primera vez)
+            if (Tone.context.state !== 'running') {
+                try {
+                    await Tone.start();
+                    console.log("Contexto de Audio iniciado por el usuario.");
+                } catch(e) {
+                    console.error("Error al iniciar Tone.start():", e);
                 }
-                
-                initMission(); // Prepara la misión
-                setGameState('playing');
             }
+
+            // 2. Inicializar SFX si no están listos
+            if (!audioReady) {
+                initAudio();
+            }
+            
+            // 3. Manejar la Música de Fondo
+            if (audioReady && backgroundMusic.state !== 'started') {
+                try {
+                    // Mostrar carga al usuario
+                    startMissionButton.disabled = true;
+                    startMissionButton.textContent = "Cargando Música...";
+                    
+                    // Cargar y empezar la música
+                    // (Asumimos que la URL ya está en backgroundMusic.load() en initAudio)
+                    // (Corrección: La URL no fue cargada, la cargamos ahora)
+                    await backgroundMusic.load(musicUrl);
+                    backgroundMusic.start();
+                    
+                    console.log("Música de fondo iniciada.");
+                    // Restaurar botón (aunque se va a ocultar)
+                    startMissionButton.disabled = false;
+                    startMissionButton.textContent = "¡Iniciar Misión!";
+
+                } catch (e) {
+                    console.error("No se pudo cargar o iniciar la música:", e);
+                    // El juego continúa sin música
+                    startMissionButton.disabled = false;
+                    startMissionButton.textContent = "¡Iniciar Misión!";
+                }
+            }
+
+            // 4. Iniciar la Misión
+            initMission();
+            setGameState('playing');
         });
         
         // Volver al Hangar
         function goBackToHangar() {
             if (gameState === 'over') {
-                // Si perdiste, reinicia stats básicos y puntaje
+                // Si perdiste, reinicia stats básicos
                 lives = 5;
                 resources = 0;
-                totalScore = 0; // REINICIA PUNTAJE TOTAL
+                totalScore = 0; // Reiniciar puntaje total
                 playerShootCooldown = 15;
                 fireRateCost = 100;
             }
-            // (Si ganas, las recompensas y el puntaje total se mantienen)
+            // (Si ganas, ya recibiste las recompensas)
             setGameState('hangar');
         }
         goToHangarWin.addEventListener('click', goBackToHangar);
@@ -1214,9 +1262,9 @@
         upgradeFireRateButton.addEventListener('click', () => {
             if (resources >= fireRateCost) {
                 resources -= fireRateCost;
-                playerShootCooldown = Math.max(5, playerShootCooldown - 2); // Mejora
+                playerShootCooldown = Math.max(5, playerShootCooldown - 2); // Mejora (reduce el cooldown)
                 fireRateCost = Math.floor(fireRateCost * 1.8);
-                updateUI();
+                updateUI(); // Actualiza la UI
             }
         });
 
@@ -1282,7 +1330,7 @@
                     else if (key === 'd') originalButton = btnRight;
                     else if (key === ' ') originalButton = btnFire;
 
-                    if (element !== originalButton && !originalButton.contains(element)) {
+                    if (element !== originalButton && (originalButton && !originalButton.contains(element))) {
                         keys[key] = false; // Soltamos la tecla
                         delete activeTouches[touch.identifier]; // Dejamos de rastrear este toque
                     }
@@ -1293,13 +1341,9 @@
 
         // Configuración inicial
         resizeCanvas();
-        initAudio(); // Configura los sonidos
         setGameState('hangar'); // Empezar en el Hangar
     </script>
 
 </body>
 </html>
-
-
-
 
