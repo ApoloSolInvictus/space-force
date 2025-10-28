@@ -49,42 +49,7 @@
             align-items: center;
         }
 
-        /* SIMULACIÓN DE CABINA (HUD) */
-        #cockpit-hud {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 5; /* Por encima del canvas, debajo de los menús */
-            pointer-events: none; /* No bloquear clics */
-            border: 4px solid rgba(74, 144, 226, 0.3); /* Borde azulado */
-            box-sizing: border-box; /* Para que el borde no añada tamaño */
-            display: none; /* Oculto hasta que empiece el juego */
-        }
-        /* Líneas de la cabina */
-        #cockpit-hud::before, #cockpit-hud::after {
-            content: '';
-            position: absolute;
-            background-color: rgba(74, 144, 226, 0.3);
-        }
-        /* Línea vertical */
-        #cockpit-hud::before {
-            width: 2px;
-            height: 30%;
-            left: 50%;
-            bottom: 0;
-            transform: translateX(-50%);
-        }
-         /* Líneas horizontales (simulando dashboard) */
-        #cockpit-hud::after {
-            width: 100%;
-            height: 15vh;
-            left: 0;
-            bottom: 0;
-            background: linear-gradient(to top, rgba(10, 20, 40, 0.7), transparent);
-            border-top: 2px solid rgba(74, 144, 226, 0.4);
-        }
+        /* --- HUD DE CABINA ELIMINADO --- */
 
 
         /* Contenedor para las estadísticas */
@@ -136,7 +101,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(10, 20, 40, 0.1); /* Más transparente */
+            background-color: rgba(10, 20, 40, 0.7); /* Más transparente */
             backdrop-filter: blur(5px);
             z-index: 1; /* Detrás del contenido */
         }
@@ -299,8 +264,8 @@
         <!-- El Canvas donde se renderiza todo el juego -->
         <canvas id="game-canvas"></canvas>
         
-        <!-- El HUD de la cabina -->
-        <div id="cockpit-hud"></div>
+        <!-- El HUD de la cabina (ELIMINADO) -->
+        <!-- <div id="cockpit-hud"></div> -->
 
         <!-- Capa de UI sobre el juego -->
         <div id="ui-layer">
@@ -379,7 +344,7 @@
         const ctx = canvas.getContext('2d');
 
         // Elementos de la UI
-        const cockpitHud = document.getElementById('cockpit-hud');
+        // const cockpitHud = document.getElementById('cockpit-hud'); // ELIMINADO
         const livesCountEl = document.getElementById('lives-count');
         const resourcesCountEl = document.getElementById('resources-count');
         const scoreCountEl = document.getElementById('score-count');
@@ -431,17 +396,16 @@
         const totalImages = 5; // 5 imágenes ahora
 
         // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        // +   ¡SOCIO, AQUÍ CAMBIA LAS URLS POR LAS DE TUS IMÁGENES Y MÚSICA!   +
+        // +   RUTAS DE ARCHIVOS (USANDO LAS DE TU REPOSITORIO)                  +
         // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        // Asegúrate que estas rutas sean correctas en tu servidor
-        playerImage.src = 'https://spaceforce1.profcr.com/images/maverick.png';
-        enemyImage.src = 'https://spaceforce1.profcr.com/images/reptil.png';
-        planetImage.src = 'https://spaceforce1.profcr.com/images/gaia.png';
-        hangarImage.src = 'https://spaceforce1.profcr.com/images/hangar.png';
-        logoImage.src = 'images/sp1.png'; // <-- PONE TU LOGO AQUÍ
+        playerImage.src = 'images/maverick.png';
+        enemyImage.src = 'images/reptil.png';
+        planetImage.src = 'images/gaia.png';
+        hangarImage.src = 'images/hangar.png';
+        logoImage.src = 'images/sp1.png';
         
         // URL de la Música
-        const musicUrl = 'assets/Hollow.mp3'; // <-- ¡PONE TU URL DE "HOLLOW" AQUÍ!
+        const musicUrl = 'assets/Hollow.mp3';
         
         // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         
@@ -540,8 +504,10 @@
         // Clase del Jugador (Maverick)
         class Player {
             constructor() {
-                this.width = 50;
-                this.height = 60;
+                // --- ¡CAMBIO! Nave más grande ---
+                this.width = 65; // Antes 50
+                this.height = 78; // Antes 60
+                // --- Fin Cambio ---
                 this.x = canvasWidth / 2 - this.width / 2;
                 this.y = canvasHeight - this.height - 30; // Fijo en la parte inferior
                 this.speed = 10;
@@ -564,10 +530,6 @@
                     ctx.closePath();
                     ctx.fill();
                 }
-
-                // Propulsor (si no está en la imagen)
-                // ctx.fillStyle = '#4a90e2';
-                // ctx.fillRect(this.x + this.width / 2 - this.width / 4, this.y + this.height, this.width / 2, 10);
             }
 
             update() {
@@ -1028,10 +990,10 @@
 
             // Ocultar todas las modales
             modalScreens.forEach(screen => screen.style.display = 'none');
-            cockpitHud.style.display = 'none'; // Ocultar cabina
+            // cockpitHud.style.display = 'none'; // ELIMINADO
 
             if (gameState === 'playing') {
-                cockpitHud.style.display = 'block'; // Mostrar cabina
+                // cockpitHud.style.display = 'block'; // ELIMINADO
                 gameLoop(); // Iniciar el bucle
             } else if (gameState === 'hangar') {
                 hangarScreen.style.display = 'flex';
@@ -1212,9 +1174,6 @@
                     startMissionButton.disabled = true;
                     startMissionButton.textContent = "Cargando Música...";
                     
-                    // Cargar y empezar la música
-                    // (Asumimos que la URL ya está en backgroundMusic.load() en initAudio)
-                    // (Corrección: La URL no fue cargada, la cargamos ahora)
                     await backgroundMusic.load(musicUrl);
                     backgroundMusic.start();
                     
@@ -1346,6 +1305,4 @@
 
 </body>
 </html>
-
-
 
