@@ -10,6 +10,12 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <style>
         /* Fuente Inter, fondo negro */
+        html {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
             background-color: #000;
@@ -17,12 +23,22 @@
             margin: 0;
             padding: 0;
             overflow: hidden;
+            min-height: 100vh;
+            min-height: 100dvh;
+            overscroll-behavior: none;
+            touch-action: none;
         }
-        
+
+        button {
+            font: inherit;
+        }
+
         #game-container {
             position: relative;
             width: 100vw;
             height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
         }
 
         #game-canvas {
@@ -32,6 +48,9 @@
             top: 0;
             left: 0;
             z-index: 1;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
         }
 
         /* Capa de la Interfaz de Usuario (UI) */
@@ -55,19 +74,31 @@
         /* Contenedor para las estadísticas */
         #game-stats {
             position: absolute;
-            top: 20px;
-            left: 20px;
-            font-size: 1.1rem;
+            top: max(14px, env(safe-area-inset-top));
+            left: max(14px, env(safe-area-inset-left));
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, auto));
+            gap: 6px 16px;
+            font-size: clamp(0.78rem, 1.6vw, 1.05rem);
             font-weight: 600;
             background-color: rgba(10, 20, 40, 0.7);
-            padding: 12px 18px;
-            border-radius: 12px;
+            padding: 10px 14px;
+            border-radius: 8px;
             border: 1px solid rgba(255, 255, 255, 0.2);
             pointer-events: all;
             backdrop-filter: blur(5px);
             z-index: 11; /* Encima de todo */
+            max-width: calc(100vw - 28px);
         }
-        #game-stats div { margin-bottom: 5px; }
+        #game-stats div {
+            margin-bottom: 0;
+            white-space: nowrap;
+        }
+        #game-stats .wide-stat {
+            grid-column: 1 / -1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
 
         /* Estilo para las pantallas modales (AHORA FULLSCREEN) */
         .modal {
@@ -76,12 +107,13 @@
             left: 0; /* Fullscreen */
             width: 100vw; /* Fullscreen */
             height: 100vh; /* Fullscreen */
+            height: 100dvh; /* Fullscreen con barra móvil dinámica */
             transform: none; /* No centrar */
             background-size: cover; /* Fondo de hangar */
             background-position: center;
             border: none; /* Sin borde */
             border-radius: 0; /* Sin bordes redondeados */
-            padding: 2rem;
+            padding: max(1.25rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1.25rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
             box-sizing: border-box; /* Incluir padding */
             z-index: 20;
             pointer-events: all;
@@ -91,8 +123,9 @@
             align-items: center;
             box-shadow: none; /* Sin sombra */
             backdrop-filter: none; /* Sin blur directo */
+            overflow-y: auto;
         }
-        
+
         /* Capa oscura SOBRE la imagen de fondo, pero DEBAJO del texto */
         .modal::before {
             content: '';
@@ -101,18 +134,18 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(10, 20, 40, 0.1); /* Más transparente */
+            background-color: rgba(4, 10, 24, 0.32);
             backdrop-filter: blur(5px);
             z-index: 1; /* Detrás del contenido */
         }
-        
+
         /* Todo el contenido del modal (texto, botones) */
         .modal > * {
             position: relative; /* Para que se ponga sobre el ::before */
             z-index: 2; /* Encima de la capa oscura */
             text-shadow: 0 2px 4px rgba(0,0,0,0.5); /* Sombra de texto para legibilidad */
-            max-width: 500px; /* Mantenemos ancho máximo para legibilidad */
-            width: 90%;
+            max-width: min(520px, calc(100vw - 2rem)); /* Mantenemos ancho máximo para legibilidad */
+            width: min(90vw, 520px);
             text-align: center;
         }
         /* Estilo para el nuevo logo */
@@ -126,21 +159,24 @@
         }
 
         .modal h1 {
-            font-size: 2.5rem;
+            font-size: clamp(1.8rem, 5.8vw, 2.6rem);
             font-weight: 800;
             color: #fff;
             margin-bottom: 1rem;
-            letter-spacing: -1px;
+            letter-spacing: 0;
+            line-height: 1.05;
+            overflow-wrap: break-word;
+            text-wrap: balance;
         }
 
         .modal p {
-            font-size: 1.1rem;
+            font-size: clamp(0.98rem, 2.3vw, 1.12rem);
             color: #eee;
             margin-bottom: 1.5rem;
             line-height: 1.6;
         }
         .modal .dialogue-text {
-            font-size: 1.2rem;
+            font-size: clamp(1rem, 2.6vw, 1.2rem);
             color: #a7d7ff;
             font-style: italic;
             border-left: 4px solid #4a90e2;
@@ -156,15 +192,18 @@
             color: #fff;
             background-color: #4a90e2;
             padding: 0.75rem 1.75rem;
-            border-radius: 12px;
+            border-radius: 8px;
             border: none;
             cursor: pointer;
             transition: all 0.2s ease;
             box-shadow: 0 4px 15px rgba(74, 144, 226, 0.4);
-            width: 80%;
+            width: min(380px, calc(100vw - 2rem));
+            max-width: 100%;
+            min-height: 48px;
             margin-top: 0.5rem;
             z-index: 2;
             position: relative;
+            white-space: normal;
         }
         .modal-button.secondary {
             background-color: #334155; /* Gris azulado */
@@ -178,7 +217,7 @@
         .modal-button.secondary:hover {
             background-color: #475569;
         }
-        
+
         .upgrade-button.disabled {
             background-color: #444;
             color: #888;
@@ -186,34 +225,39 @@
             transform: none;
             box-shadow: none;
         }
-        
+        .modal-button:disabled {
+            cursor: wait;
+            opacity: 0.75;
+            transform: none;
+        }
+
         /* --- CONTROLES MÓVILES --- */
         #mobile-controls {
             position: absolute;
-            bottom: 20px; /* Más abajo */
+            bottom: max(14px, env(safe-area-inset-bottom));
             left: 0;
             width: 100%;
             z-index: 15;
             display: none; /* Oculto en PC */
             justify-content: space-between;
             align-items: flex-end;
-            padding: 0 15px; /* Menos padding */
+            padding: 0 max(14px, env(safe-area-inset-right)) 0 max(14px, env(safe-area-inset-left));
             box-sizing: border-box;
             pointer-events: all; /* Permite clics/taps */
         }
-        
+
         #d-pad {
             display: grid;
             grid-template-areas: ". up ." "left . right" ". down .";
-            gap: 8px; /* Más juntos */
+            gap: clamp(6px, 1.8vw, 10px);
         }
-        
+
         .mobile-btn {
-            width: 50px; /* Más pequeños */
-            height: 50px; /* Más pequeños */
+            width: clamp(48px, 12vw, 62px);
+            height: clamp(48px, 12vw, 62px);
             background-color: rgba(40, 60, 90, 0.5); /* Color "caza" */
             border: 1px solid rgba(100, 150, 200, 0.6); /* Borde sutil */
-            border-radius: 12px; /* Cuadrado redondeado */
+            border-radius: 8px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -221,6 +265,9 @@
             color: white;
             user-select: none; /* Evitar selección */
             box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.4); /* Sombra interna */
+            touch-action: none;
+            -webkit-tap-highlight-color: transparent;
+            backdrop-filter: blur(6px);
         }
         .mobile-btn:active {
             background-color: rgba(74, 144, 226, 0.8);
@@ -231,13 +278,13 @@
         #btn-down { grid-area: down; }
         #btn-left { grid-area: left; }
         #btn-right { grid-area: right; }
-        
+
         #fire-button {
-            width: 65px; /* Más pequeño */
-            height: 65px; /* Más pequeño */
+            width: clamp(72px, 18vw, 90px);
+            height: clamp(72px, 18vw, 90px);
             background-color: rgba(180, 40, 40, 0.5); /* Rojo "caza" */
             border: 1px solid rgba(220, 100, 100, 0.6); /* Borde sutil */
-            border-radius: 16px; /* Cuadrado redondeado */
+            border-radius: 8px;
             font-size: 0.9rem; /* Texto más pequeño */
             font-weight: 700;
             color: white;
@@ -250,9 +297,66 @@
         }
 
         /* Media Query para mostrar controles en móviles/tablets */
-        @media (max-width: 1024px) {
+        @media (hover: none), (pointer: coarse), (max-width: 1024px) {
             #mobile-controls {
                 display: flex;
+            }
+        }
+
+        @media (max-width: 720px) {
+            #game-stats {
+                top: max(8px, env(safe-area-inset-top));
+                left: max(8px, env(safe-area-inset-left));
+                grid-template-columns: repeat(2, minmax(0, auto));
+                gap: 4px 10px;
+                padding: 8px 10px;
+                font-size: 0.78rem;
+            }
+
+            #game-stats .wide-stat {
+                display: none;
+            }
+
+            .game-logo {
+                max-width: 260px;
+            }
+
+            .modal h1 {
+                font-size: clamp(1.55rem, 7.2vw, 2rem);
+                line-height: 1.08;
+            }
+
+            .modal p {
+                font-size: 0.95rem;
+            }
+
+            .modal-button, .upgrade-button {
+                width: calc(100vw - 2rem);
+            }
+        }
+
+        @media (max-height: 520px) and (orientation: landscape) {
+            #game-stats {
+                font-size: 0.72rem;
+                padding: 6px 8px;
+            }
+
+            .modal {
+                justify-content: flex-start;
+                padding-top: max(0.75rem, env(safe-area-inset-top));
+            }
+
+            .game-logo {
+                max-width: 190px;
+                margin-bottom: 0.5rem;
+            }
+
+            .modal h1 {
+                margin-bottom: 0.5rem;
+            }
+
+            .modal p {
+                margin-bottom: 0.75rem;
             }
         }
 
@@ -263,30 +367,32 @@
     <div id="game-container">
         <!-- El Canvas donde se renderiza todo el juego -->
         <canvas id="game-canvas"></canvas>
-        
+
         <!-- El HUD de la cabina (ELIMINADO) -->
         <!-- <div id="cockpit-hud"></div> -->
 
         <!-- Capa de UI sobre el juego -->
         <div id="ui-layer">
-            
+
             <!-- Estadísticas -->
             <div id="game-stats" class="text-white">
+                <div>Nivel: <span id="level-count">1</span></div>
                 <div>Vidas: <span id="lives-count">5</span></div>
                 <div>Recursos: <span id="resources-count">0</span></div>
-                <div>Planeta Liberado: <span id="score-count">0</span>%</div>
+                <div>Planeta Liberado: <span id="score-count">0%</span></div>
                 <div>Puntaje: <span id="total-score-count">0</span></div> <!-- Puntaje total -->
+                <div class="wide-stat">Sector: <span id="sector-count">Órbita Exterior</span></div>
             </div>
-            
+
             <!-- Controles Móviles -->
             <div id="mobile-controls">
                 <div id="d-pad">
-                    <button id="btn-up" class="mobile-btn">▲</button>
-                    <button id="btn-left" class="mobile-btn">◄</button>
-                    <button id="btn-right" class="mobile-btn">►</button>
-                    <button id="btn-down" class="mobile-btn">▼</button>
+                    <button id="btn-up" class="mobile-btn" aria-label="Mover arriba">▲</button>
+                    <button id="btn-left" class="mobile-btn" aria-label="Mover izquierda">◄</button>
+                    <button id="btn-right" class="mobile-btn" aria-label="Mover derecha">►</button>
+                    <button id="btn-down" class="mobile-btn" aria-label="Mover abajo">▼</button>
                 </div>
-                <button id="fire-button" class="mobile-btn">FUEGO</button>
+                <button id="fire-button" class="mobile-btn" aria-label="Disparar">FUEGO</button>
             </div>
 
 
@@ -295,21 +401,21 @@
             <!-- Pantalla de HANGAR (El popup de texto y botones) -->
             <div id="hangar-screen" class="modal" style="display: flex;">
                 <img id="logo-hangar" class="game-logo" alt="Logo del Juego" src="">
-                <h1>HANGAR DE MAVERICK</h1>
-                <p>Bienvenido de nuevo, Piloto. El 'Planeta X' sigue bajo asedio. ¿Cuál es la orden?</p>
+                <h1>HANGAR DE<br>MAVERICK</h1>
+                <p id="hangar-briefing">Bienvenido de nuevo, Piloto. El 'Planeta X' sigue bajo asedio. ¿Cuál es la orden?</p>
                 <button id="start-mission-button" class="modal-button" disabled>Cargando Recursos...</button>
                 <button id="go-to-upgrades-button" class="modal-button secondary">Ver Mejoras de Nave</button>
                 <button id="go-to-dialogue-button" class="modal-button secondary">Hablar con Aliados</button>
             </div>
-            
+
             <!-- Pantalla de Mejoras -->
             <div id="upgrade-screen" class="modal">
                 <h1>MEJORAS DE NAVE</h1>
                 <p>Gasta tus recursos para mejorar el 'Interceptor'.</p>
-                <button id="upgrade-firerate" class="upgrade-button">Mejorar Cadencia de Disparo (Costo: 50)</button>
+                <button id="upgrade-firerate" class="upgrade-button">Mejorar Cadencia de Disparo (Costo: 100)</button>
                 <button id="back-to-hangar-1" class="modal-button secondary">Volver al Hangar</button>
             </div>
-            
+
             <!-- Pantalla de Diálogo -->
             <div id="dialogue-screen" class="modal">
                 <h1>COMUNICACIONES</h1>
@@ -323,8 +429,8 @@
             <!-- Pantalla de Victoria -->
             <div id="win-screen" class="modal">
                 <img id="logo-win" class="game-logo" alt="Logo del Juego" src="">
-                <h1>¡Planeta Liberado!</h1>
-                <p>¡Gran trabajo, piloto! Has recuperado el planeta.<br> <strong class="text-lg text-green-400">+5 Vidas y +100 Recursos Obtenidos.</strong></p>
+                <h1 id="win-title">¡Planeta Liberado!</h1>
+                <p id="win-message">¡Gran trabajo, piloto! Has recuperado el planeta.<br> <strong class="text-lg text-green-400">+5 Vidas y +100 Recursos Obtenidos.</strong></p>
                 <button id="go-to-hangar-win" class="modal-button">Volver al Hangar</button>
             </div>
 
@@ -345,11 +451,13 @@
 
         // Elementos de la UI
         // const cockpitHud = document.getElementById('cockpit-hud'); // ELIMINADO
+        const levelCountEl = document.getElementById('level-count');
         const livesCountEl = document.getElementById('lives-count');
         const resourcesCountEl = document.getElementById('resources-count');
         const scoreCountEl = document.getElementById('score-count');
         const totalScoreCountEl = document.getElementById('total-score-count'); // Puntaje total
-        
+        const sectorCountEl = document.getElementById('sector-count');
+
         const hangarScreen = document.getElementById('hangar-screen'); // El popup de texto/botones
         const upgradeScreen = document.getElementById('upgrade-screen');
         const dialogueScreen = document.getElementById('dialogue-screen');
@@ -357,7 +465,7 @@
         const gameOverScreen = document.getElementById('game-over-screen');
         // Array de todas las pantallas modales para aplicar el fondo
         const modalScreens = [hangarScreen, upgradeScreen, dialogueScreen, winScreen, gameOverScreen];
-        
+
         // Logos
         const logoHangar = document.getElementById('logo-hangar');
         const logoWin = document.getElementById('logo-win');
@@ -371,7 +479,10 @@
         const backToHangar2 = document.getElementById('back-to-hangar-2');
         const goToHangarWin = document.getElementById('go-to-hangar-win');
         const goToHangarLose = document.getElementById('go-to-hangar-lose');
-        
+        const hangarBriefingEl = document.getElementById('hangar-briefing');
+        const winTitleEl = document.getElementById('win-title');
+        const winMessageEl = document.getElementById('win-message');
+
         // Botones Móviles
         const btnUp = document.getElementById('btn-up');
         const btnDown = document.getElementById('btn-down');
@@ -381,15 +492,15 @@
 
         let canvasWidth, canvasHeight;
         let player, bullets, enemyBullets, enemies, particles, stars, planet;
-        
+
         // --- Audio con Tone.js ---
         let audioReady = false;
         let laserSound, enemyLaserSound, explosionSound, playerHitSound, gameOverSound, backgroundMusic;
-        
+
         // --- Carga de Imágenes ---
         let playerImage = new Image();
         let enemyImage = new Image();
-        let planetImage = new Image(); 
+        let planetImage = new Image();
         let hangarImage = new Image();
         let logoImage = new Image(); // Logo del juego
         let imagesLoaded = 0;
@@ -403,22 +514,22 @@
         planetImage.src = 'images/gaia.png';
         hangarImage.src = 'images/hangar.png';
         logoImage.src = 'images/sp1.png';
-        
+
         // URL de la Música
         const musicUrl = 'assets/Hollow.mp3';
-        
+
         // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        
+
         // Estadísticas del jugador
         let lives = 5;
         let resources = 0;
         let totalScore = 0; // Puntaje total
         let score, enemiesToDefeat;
-        
+
         // Mejoras
         let playerShootCooldown = 15; // Valor inicial
         let fireRateCost = 100;
-        
+
         let gameState = 'hangar'; // 'hangar', 'playing', 'won', 'over', 'upgrades', 'dialogue'
         let keys = {};
         let gameFrame = 0;
@@ -431,27 +542,238 @@
         let enemySpawnTimer = 0;
         let enemySpawnInterval = 100; // Frames (approx 1.6s) para spawn
         let maxEnemiesOnScreen = 5; // Máximos enemigos a la vez
+        let missionLevel = 1;
+        let currentMission = null;
+        let completedMission = null;
+
+        const missionBands = [
+            {
+                name: 'Órbita Exterior',
+                enemiesToDefeat: 24,
+                initialEnemies: 2,
+                spawnInterval: 92,
+                minSpawnInterval: 58,
+                maxEnemies: 4,
+                enemySpeed: 0.9,
+                enemyHealth: 1,
+                shootChance: 0.005,
+                planetStartRadius: 92,
+                planetEndRadius: 132,
+                planetStartY: 145,
+                planetEndY: 132,
+                rewardLives: 4,
+                rewardResources: 90
+            },
+            {
+                name: 'Cinturón Defensivo',
+                enemiesToDefeat: 32,
+                initialEnemies: 3,
+                spawnInterval: 84,
+                minSpawnInterval: 52,
+                maxEnemies: 5,
+                enemySpeed: 1,
+                enemyHealth: 2,
+                shootChance: 0.007,
+                planetStartRadius: 118,
+                planetEndRadius: 165,
+                planetStartY: 134,
+                planetEndY: 118,
+                rewardLives: 5,
+                rewardResources: 110
+            },
+            {
+                name: 'Escudo Planetario',
+                enemiesToDefeat: 40,
+                initialEnemies: 3,
+                spawnInterval: 76,
+                minSpawnInterval: 46,
+                maxEnemies: 6,
+                enemySpeed: 1.08,
+                enemyHealth: 2,
+                shootChance: 0.009,
+                planetStartRadius: 150,
+                planetEndRadius: 205,
+                planetStartY: 120,
+                planetEndY: 100,
+                rewardLives: 5,
+                rewardResources: 130
+            },
+            {
+                name: 'Atmósfera Alta',
+                enemiesToDefeat: 48,
+                initialEnemies: 4,
+                spawnInterval: 68,
+                minSpawnInterval: 40,
+                maxEnemies: 7,
+                enemySpeed: 1.16,
+                enemyHealth: 3,
+                shootChance: 0.011,
+                planetStartRadius: 185,
+                planetEndRadius: 250,
+                planetStartY: 104,
+                planetEndY: 82,
+                rewardLives: 6,
+                rewardResources: 150
+            },
+            {
+                name: 'Ciudadela Reptiliana',
+                enemiesToDefeat: 56,
+                initialEnemies: 4,
+                spawnInterval: 62,
+                minSpawnInterval: 36,
+                maxEnemies: 8,
+                enemySpeed: 1.24,
+                enemyHealth: 3,
+                shootChance: 0.013,
+                planetStartRadius: 225,
+                planetEndRadius: 310,
+                planetStartY: 88,
+                planetEndY: 62,
+                rewardLives: 6,
+                rewardResources: 180
+            }
+        ];
+
+        function clamp(value, min, max) {
+            return Math.min(Math.max(value, min), max);
+        }
+
+        function lerp(start, end, amount) {
+            return start + (end - start) * amount;
+        }
+
+        function easeOutCubic(value) {
+            return 1 - Math.pow(1 - clamp(value, 0, 1), 3);
+        }
+
+        function getMissionConfig(level) {
+            const bandIndex = Math.min(level - 1, missionBands.length - 1);
+            const base = missionBands[bandIndex];
+            const overflow = Math.max(0, level - missionBands.length);
+
+            return {
+                ...base,
+                level,
+                enemiesToDefeat: base.enemiesToDefeat + overflow * 8,
+                spawnInterval: Math.max(48, base.spawnInterval - overflow * 4),
+                minSpawnInterval: Math.max(28, base.minSpawnInterval - overflow * 2),
+                maxEnemies: base.maxEnemies + Math.min(overflow, 4),
+                enemySpeed: base.enemySpeed + overflow * 0.04,
+                enemyHealth: base.enemyHealth + Math.floor(overflow / 3),
+                shootChance: base.shootChance + overflow * 0.0008,
+                planetStartRadius: base.planetStartRadius + overflow * 18,
+                planetEndRadius: base.planetEndRadius + overflow * 24,
+                planetStartY: Math.max(58, base.planetStartY - overflow * 6),
+                planetEndY: Math.max(42, base.planetEndY - overflow * 7),
+                rewardResources: base.rewardResources + overflow * 20
+            };
+        }
+
+        function getMissionProgress() {
+            if (!enemiesToDefeat || !Number.isFinite(enemiesToDefeat)) return 0;
+            return clamp(score / enemiesToDefeat, 0, 1);
+        }
+
+        function getLiberationPercentage() {
+            return Math.floor(getMissionProgress() * 100);
+        }
+
+        function getStarCount() {
+            return Math.round(clamp((canvasWidth * canvasHeight) / 7000, 90, 190));
+        }
+
+        function getViewportScale() {
+            return clamp(Math.min(canvasWidth / 920, canvasHeight / 740), 0.68, 1.14);
+        }
+
+        function getShipSize() {
+            const scale = getViewportScale();
+            return {
+                width: Math.round(65 * scale),
+                height: Math.round(78 * scale)
+            };
+        }
+
+        function getPlayerSpeed() {
+            return clamp(canvasWidth * 0.012, 6, 11);
+        }
+
+        function getPlayerTopLimit() {
+            return canvasHeight * (canvasWidth <= 720 ? 0.54 : 0.58);
+        }
+
+        function getPlayerBottomLimit() {
+            return canvasHeight - bottomGameMargin;
+        }
+
+        function setMissionBriefing() {
+            const mission = currentMission || getMissionConfig(missionLevel);
+            hangarBriefingEl.innerHTML = `Planeta X está más cerca.<br>Nivel ${mission.level}: ${mission.name}.<br>Objetivo: ${mission.enemiesToDefeat} naves reptilianas.`;
+            if (!startMissionButton.disabled) {
+                startMissionButton.textContent = `Iniciar Misión ${mission.level}`;
+            }
+        }
+
+        function setWinCopy(completed, nextMission) {
+            winTitleEl.textContent = `¡${completed.name} Liberado!`;
+            winMessageEl.innerHTML = `Gran trabajo, piloto. Gaia está más cerca y el bloqueo retrocede.<br><strong class="text-lg text-green-400">+${completed.rewardLives} Vidas y +${completed.rewardResources} Recursos Obtenidos.</strong><br><span class="text-sm text-blue-200">Siguiente avance: Nivel ${nextMission.level}, ${nextMission.name}.</span>`;
+        }
 
         // --- 2. CLASES DEL JUEGO (MODIFICADAS PARA PSEUDO-3D E IMÁGENES) ---
 
         // Clase del Planeta (Fondo)
         class Planet {
-            constructor() {
-                this.y = 150;
-                this.radius = 100;
+            constructor(mission) {
                 this.color = '#4a90e2'; // Planeta azul (fallback)
                 this.image = planetImage; // Usar la imagen cargada
+                this.setMission(mission || getMissionConfig(missionLevel));
             }
+
+            setMission(mission) {
+                this.mission = mission;
+                this.startRadius = mission.planetStartRadius;
+                this.endRadius = mission.planetEndRadius;
+                this.startY = mission.planetStartY;
+                this.endY = mission.planetEndY;
+                this.update(getMissionProgress());
+            }
+
+            update(progress) {
+                const easedProgress = easeOutCubic(progress);
+                const scale = getViewportScale();
+                this.radius = lerp(this.startRadius, this.endRadius, easedProgress) * scale;
+                this.y = lerp(this.startY, this.endY, easedProgress) * clamp(canvasHeight / 720, 0.75, 1.08);
+            }
+
             draw() {
+                const glow = ctx.createRadialGradient(
+                    canvasWidth / 2,
+                    this.y,
+                    this.radius * 0.45,
+                    canvasWidth / 2,
+                    this.y,
+                    this.radius * 1.35
+                );
+                glow.addColorStop(0, 'rgba(76, 163, 255, 0.18)');
+                glow.addColorStop(0.55, 'rgba(76, 163, 255, 0.07)');
+                glow.addColorStop(1, 'rgba(76, 163, 255, 0)');
+
+                ctx.save();
+                ctx.fillStyle = glow;
+                ctx.beginPath();
+                ctx.arc(canvasWidth / 2, this.y, this.radius * 1.35, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+
                 // Dibujar la imagen si cargó correctamente
                 if (this.image.complete && this.image.naturalHeight !== 0) {
                     const aspect = this.image.naturalWidth / this.image.naturalHeight;
                     const scaledHeight = this.radius * 2;
                     const scaledWidth = scaledHeight * aspect;
-                    ctx.drawImage(this.image, 
-                                  canvasWidth / 2 - scaledWidth / 2, 
-                                  this.y - this.radius, 
-                                  scaledWidth, 
+                    ctx.drawImage(this.image,
+                                  canvasWidth / 2 - scaledWidth / 2,
+                                  this.y - this.radius,
+                                  scaledWidth,
                                   scaledHeight);
                 } else {
                     // Fallback al círculo azul
@@ -462,7 +784,7 @@
                 }
             }
         }
-        
+
         // Clase de Estrella (Fondo)
         class Star {
             constructor() {
@@ -488,7 +810,7 @@
                 let screenX = (this.x / this.z) + (canvasWidth / 2);
                 let screenY = (this.y / this.z) + horizonY; // <-- CAMBIO: Usar horizonY
                 let radius = (1 - this.z) * 2; // Más grande cuanto más cerca (z=1)
-                
+
                 // Si está fuera de la pantalla, no dibujar
                 if (screenX < 0 || screenX > canvasWidth || screenY < 0 || screenY > canvasHeight) {
                     return;
@@ -504,15 +826,24 @@
         // Clase del Jugador (Maverick)
         class Player {
             constructor() {
-                // --- ¡CAMBIO! Nave más grande ---
-                this.width = 65; // Antes 50
-                this.height = 78; // Antes 60
-                // --- Fin Cambio ---
+                const size = getShipSize();
+                this.width = size.width;
+                this.height = size.height;
                 this.x = canvasWidth / 2 - this.width / 2;
-                this.y = canvasHeight - this.height - 30; // Fijo en la parte inferior
-                this.speed = 10;
+                this.y = getPlayerBottomLimit() - this.height;
+                this.speed = getPlayerSpeed();
                 this.image = playerImage; // Usar la imagen cargada
                 this.lastShotFrame = 0;
+            }
+
+            resize() {
+                const centerX = this.x + this.width / 2;
+                const size = getShipSize();
+                this.width = size.width;
+                this.height = size.height;
+                this.speed = getPlayerSpeed();
+                this.x = clamp(centerX - this.width / 2, 0, canvasWidth - this.width);
+                this.y = clamp(this.y, getPlayerTopLimit(), getPlayerBottomLimit() - this.height);
             }
 
             draw() {
@@ -543,9 +874,9 @@
                 // Limitar al canvas
                 if (this.x < 0) this.x = 0;
                 if (this.x + this.width > canvasWidth) this.x = canvasWidth - this.width;
-                if (this.y < canvasHeight * 0.6) this.y = canvasHeight * 0.6; // Límite superior
+                if (this.y < getPlayerTopLimit()) this.y = getPlayerTopLimit(); // Límite superior
                 // CAMBIO: Usar el margen inferior dinámico
-                if (this.y + this.height > canvasHeight - bottomGameMargin) this.y = canvasHeight - this.height - bottomGameMargin; 
+                if (this.y + this.height > getPlayerBottomLimit()) this.y = getPlayerBottomLimit() - this.height;
 
                 // Disparar
                 if (keys[' '] && (gameFrame - this.lastShotFrame) > playerShootCooldown) {
@@ -563,33 +894,35 @@
 
         // Clase del Enemigo "Reptiliano" (Pseudo-3D)
         class Enemy {
-            constructor() {
+            constructor(mission) {
+                this.mission = mission || currentMission || getMissionConfig(missionLevel);
                 this.z = 100; // Lejos (profundidad)
-                this.baseX = (Math.random() - 0.5) * 100; // Posición en el "horizonte"
-                this.baseY = (Math.random() - 0.5) * 50 + 50; // Altura en el "horizonte"
-                
+                const laneSpread = clamp(canvasWidth * 0.28, 120, 260);
+                this.baseX = (Math.random() - 0.5) * laneSpread; // Posición en el "horizonte"
+                this.baseY = (Math.random() - 0.5) * 70 + 48; // Altura en el "horizonte"
+
                 // Propiedades 2D proyectadas
                 this.x = 0;
                 this.y = 0;
                 this.width = 0;
                 this.height = 0;
-                
-                this.speed = Math.random() * 0.3 + 0.2; // Velocidad de acercamiento
+
+                this.speed = (Math.random() * 0.28 + 0.2) * this.mission.enemySpeed; // Velocidad de acercamiento
                 this.image = enemyImage;
-                this.shootProbability = 0.008; // Ligeramente más agresivos
+                this.shootProbability = this.mission.shootChance; // Ligeramente más agresivos por nivel
                 this.baseWidth = 40; // Ancho base (para escalar)
                 this.baseHeight = 35; // Alto base (para escalar)
-                this.health = 2;
+                this.health = this.mission.enemyHealth;
             }
-            
+
             // Proyección 2.5D
             project() {
                 // Fórmula simple: escala = 1 / z
                 // Cuanto más pequeño 'z', más grande en pantalla (más cerca)
-                const scale = 50 / this.z; 
+                const scale = 50 / this.z;
                 this.width = this.baseWidth * scale;
                 this.height = this.baseHeight * scale;
-                
+
                 this.x = (this.baseX * scale) + (canvasWidth / 2) - this.width / 2;
                 this.y = (this.baseY * scale) + horizonY - this.height / 2; // <-- CAMBIO: Usar horizonY
             }
@@ -622,14 +955,14 @@
                     this.shoot();
                 }
             }
-            
+
             shoot() {
                 // Las balas enemigas también escalan
                 enemyBullets.push(new Projectile(this.x + this.width / 2, this.y + this.height, 4, 8, '#DC143C', 0, this.z));
                 if (audioReady) enemyLaserSound.triggerAttackRelease("G3", "0.2"); // Sonido
             }
         }
-        
+
         // Clase Proyectil (Modificada para Pseudo-3D)
         class Projectile {
             constructor(x, y, width, height, color, velocityY, z = null) {
@@ -638,13 +971,13 @@
                 this.width = width;
                 this.height = height;
                 this.color = color;
-                
+
                 // Balas del jugador (velocidad Y fija)
                 this.velocityY = velocityY;
-                
+
                 // Balas enemigas (z-based)
                 this.z = z; // Profundidad inicial (si es del enemigo)
-                this.z_speed = 0.5; // Velocidad de acercamiento de la bala
+                this.z_speed = z !== null ? 0.46 + ((currentMission || getMissionConfig(missionLevel)).level * 0.015) : 0.5; // Velocidad de acercamiento de la bala
                 this.baseWidth = width;
                 this.baseHeight = height;
             }
@@ -730,14 +1063,14 @@
                     envelope: { attack: 0.01, decay: 0.3, sustain: 0, release: 0.2 }
                 }).toDestination();
                 explosionSound.volume.value = -5;
-                
+
                 // 4. Golpe al jugador (distorsión)
                 playerHitSound = new Tone.Synth({
                     oscillator: { type: 'fmsquare' },
                     envelope: { attack: 0.01, decay: 0.5, sustain: 0, release: 0.2 }
                 }).toDestination();
                 playerHitSound.volume.value = -3;
-                
+
                 // 5. Game Over (triste)
                 gameOverSound = new Tone.Synth({
                      oscillator: { type: 'triangle' },
@@ -750,7 +1083,7 @@
                     loop: true,
                     volume: -10, // Más bajo que los efectos
                 }).toDestination();
-                
+
                 audioReady = true;
                 console.log("Sistema de audio inicializado.");
             } catch (e) {
@@ -762,44 +1095,49 @@
 
         // Inicializar/Reiniciar variables del juego
         function initMission() {
+            currentMission = getMissionConfig(missionLevel);
             player = new Player();
             bullets = [];
             enemyBullets = [];
             enemies = [];
             particles = [];
             stars = [];
-            planet = new Planet();
+            planet = new Planet(currentMission);
 
             score = 0;
-            enemiesToDefeat = 50;
+            enemiesToDefeat = currentMission.enemiesToDefeat;
             gameFrame = 0;
             enemySpawnTimer = 0; // Reiniciar timer de spawn
-            enemySpawnInterval = 100; // Reiniciar intervalo
-            
+            enemySpawnInterval = currentMission.spawnInterval; // Reiniciar intervalo
+            maxEnemiesOnScreen = currentMission.maxEnemies;
+
             updateUI();
 
             // Crear estrellas de fondo
-            for (let i = 0; i < 150; i++) {
+            for (let i = 0; i < getStarCount(); i++) {
                 stars.push(new Star());
             }
 
-            // Empezar con 3 enemigos
-            for (let i = 0; i < 3; i++) {
+            // Empezar con enemigos según nivel
+            for (let i = 0; i < currentMission.initialEnemies; i++) {
                 spawnEnemy();
             }
         }
 
         // Generar enemigos (Ahora solo genera 1)
         function spawnEnemy() {
-            enemies.push(new Enemy());
+            enemies.push(new Enemy(currentMission));
         }
-        
+
         // Dibujar fondo
         function handleBackground() {
             ctx.fillStyle = '#000005';
             ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-            
-            planet.draw();
+
+            if (planet) {
+                planet.update(getMissionProgress());
+                planet.draw();
+            }
 
             stars.forEach(star => {
                 star.update();
@@ -820,7 +1158,7 @@
                 // Si la bala sale por arriba o llega al horizonte
                 if (bullets[i].y < horizonY) bullets.splice(i, 1);
             }
-            
+
             // Balas Enemigas
             for (let i = enemyBullets.length - 1; i >= 0; i--) {
                 enemyBullets[i].update();
@@ -829,33 +1167,32 @@
             }
 
             // Enemigos
-            
-            // --- NUEVO Sistema de Spawn Gradual ---
+
+            // --- Sistema de Spawn Gradual por nivel ---
             enemySpawnTimer++;
+            const progress = getMissionProgress();
+            const dynamicSpawnInterval = Math.max(
+                currentMission.minSpawnInterval,
+                Math.floor(lerp(currentMission.spawnInterval, currentMission.minSpawnInterval, progress))
+            );
+
             // Si ha pasado el tiempo Y no hay demasiados enemigos Y no hemos llegado al total de la misión
-            if (enemySpawnTimer > enemySpawnInterval && 
-                enemies.length < maxEnemiesOnScreen && 
+            if (enemySpawnTimer > dynamicSpawnInterval &&
+                enemies.length < maxEnemiesOnScreen &&
                 (score + enemies.length) < enemiesToDefeat) { // Asegura no spawnear de más
-                
+
                 spawnEnemy(); // Spawnea 1 enemigo
                 enemySpawnTimer = 0; // Reiniciar timer
-                
-                // Acelerar el spawn a medida que avanza el juego
-                if (score > enemiesToDefeat * 0.75) { // 75%
-                    enemySpawnInterval = 50; // Más rápido
-                } else if (score > enemiesToDefeat * 0.4) { // 40%
-                    enemySpawnInterval = 75; // Un poco más rápido
-                }
             }
-            // --- FIN Nuevo Sistema de Spawn ---
-            
+            // --- FIN Sistema de Spawn ---
+
             for (let i = enemies.length - 1; i >= 0; i--) {
                 enemies[i].update();
                 // Solo dibujar si está "en pantalla" (no demasiado lejos)
                 if(enemies[i].z < 95) {
                     enemies[i].draw();
                 }
-                
+
                 // Quitar enemigos que han pasado (chocan con el jugador)
                 if (enemies[i].z < 1) {
                     enemies.splice(i, 1);
@@ -869,7 +1206,7 @@
                 if (particles[i].alpha <= 0) particles.splice(i, 1);
             }
         }
-        
+
         // Manejar Colisiones
         function handleCollisions() {
             // Colisión: Balas del jugador -> Enemigos
@@ -877,30 +1214,30 @@
                 for (let j = enemies.length - 1; j >= 0; j--) {
                     // Solo colisionar si el enemigo está "cerca" (z < 90)
                     if (enemies[j].z < 90 && collisionDetect(bullets[i], enemies[j])) {
-                        
+
                         if (i >= 0 && bullets[i]) {
                              createExplosion(bullets[i].x, bullets[i].y, '#FFFFFF'); // Partícula de impacto
                              bullets.splice(i, 1);
                         }
-                        
+
                         enemies[j].health--; // Restar vida
-                        
+
                         if (enemies[j].health <= 0) {
                             // Destruir enemigo
                             createExplosion(enemies[j].x + enemies[j].width/2, enemies[j].y + enemies[j].height/2, '#FFA500'); // Naranja
                             if (audioReady) explosionSound.triggerAttackRelease("0.3"); // Sonido
                             enemies.splice(j, 1);
-                            
+
                             score++;
                             totalScore++; // Sumar al puntaje total
                             updateScore();
                         }
-                        
-                        break; 
+
+                        break;
                     }
                 }
             }
-            
+
             // Colisión: Balas enemigas -> Jugador
             for (let i = enemyBullets.length - 1; i >= 0; i--) {
                 // Solo colisionar si la bala está "cerca" (z < 10)
@@ -911,7 +1248,7 @@
                     break;
                 }
             }
-            
+
             // Colisión: Enemigos -> Jugador
              for (let i = enemies.length - 1; i >= 0; i--) {
                 // Solo colisionar si el enemigo está "cerca" (z < 5)
@@ -925,7 +1262,7 @@
                 }
             }
         }
-        
+
         // Detección de colisión (AABB - Rectángulo/Rectángulo)
         function collisionDetect(rect1, rect2) {
             // Ajuste para balas del jugador (su 'x' es el centro)
@@ -944,7 +1281,7 @@
                 particles.push(new Particle(x, y, color));
             }
         }
-        
+
         // Jugador golpeado
         function playerHit() {
             lives--;
@@ -954,26 +1291,31 @@
                 setGameState('over');
             }
         }
-        
+
         // Actualizar puntuación
         function updateScore() {
-            let liberationPercentage = Math.floor((score / enemiesToDefeat) * 100);
+            let liberationPercentage = getLiberationPercentage();
             scoreCountEl.textContent = `${liberationPercentage}%`;
             totalScoreCountEl.textContent = totalScore; // Actualizar puntaje total
-            
+            if (planet) planet.update(getMissionProgress());
+
             if (score >= enemiesToDefeat) {
                 setGameState('won');
             }
         }
-        
+
         // Actualizar toda la UI
         function updateUI() {
+            const mission = currentMission || getMissionConfig(missionLevel);
+            levelCountEl.textContent = mission.level;
             livesCountEl.textContent = lives;
             resourcesCountEl.textContent = resources;
-            let liberationPercentage = Math.floor((score / enemiesToDefeat) * 100);
-            scoreCountEl.textContent = `${liberationPercentage > 0 ? liberationPercentage : 0}%`;
+            let liberationPercentage = getLiberationPercentage();
+            scoreCountEl.textContent = `${liberationPercentage}%`;
             totalScoreCountEl.textContent = totalScore;
-            
+            sectorCountEl.textContent = mission.name;
+            setMissionBriefing();
+
             // Lógica del botón de mejora
             upgradeFireRateButton.textContent = `Mejorar Cadencia de Disparo (Costo: ${fireRateCost})`;
             if (resources >= fireRateCost) {
@@ -1004,9 +1346,14 @@
             } else if (gameState === 'dialogue') {
                 dialogueScreen.style.display = 'flex';
             } else if (gameState === 'won') {
+                completedMission = currentMission || getMissionConfig(missionLevel);
                 winScreen.style.display = 'flex';
-                lives += 5; 
-                resources += 100;
+                lives += completedMission.rewardLives;
+                resources += completedMission.rewardResources;
+                missionLevel++;
+                const nextMission = getMissionConfig(missionLevel);
+                setWinCopy(completedMission, nextMission);
+                updateUI();
             } else if (gameState === 'over') {
                 gameOverScreen.style.display = 'flex';
                 if (audioReady) gameOverSound.triggerAttackRelease("C2", "1.0"); // Sonido
@@ -1021,7 +1368,7 @@
             }
 
             ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-            
+
             handleBackground();
             handleGameElements();
             handleCollisions();
@@ -1036,10 +1383,10 @@
         function onImageLoadCheck() {
             imagesLoaded++;
             console.log(`Imágenes cargadas: ${imagesLoaded}/${totalImages}`);
-            
+
             if (imagesLoaded === totalImages) {
                 console.log("¡Todos los recursos cargados! Listo para iniciar.");
-                
+
                 // 1. Aplicar fondo de hangar si cargó
                 if (hangarImage.complete && hangarImage.naturalHeight !== 0) {
                     console.log("Aplicando fondo de hangar a los modales.");
@@ -1066,40 +1413,41 @@
                 // Habilitar el botón de inicio
                 startMissionButton.disabled = false;
                 startMissionButton.textContent = "¡Iniciar Misión!";
+                updateUI();
             }
         }
 
         // Asignar los handlers de carga
         playerImage.onload = onImageLoadCheck;
-        playerImage.onerror = () => { 
+        playerImage.onerror = () => {
             console.error("Error cargando imagen del JUGADOR. Usando fallback.");
             onImageLoadCheck();
         };
 
         enemyImage.onload = onImageLoadCheck;
-        enemyImage.onerror = () => { 
+        enemyImage.onerror = () => {
             console.error("Error cargando imagen del ENEMIGO. Usando fallback.");
             onImageLoadCheck();
         };
-        
+
         planetImage.onload = onImageLoadCheck;
-        planetImage.onerror = () => { 
+        planetImage.onerror = () => {
             console.error("Error cargando la imagen del PLANETA. Usando fallback.");
             onImageLoadCheck();
         };
 
         hangarImage.onload = onImageLoadCheck;
-        hangarImage.onerror = () => { 
+        hangarImage.onerror = () => {
             console.error("Error cargando la imagen del HANGAR. No se mostrará fondo.");
             onImageLoadCheck(); // Llama al contador global
         };
 
         logoImage.onload = onImageLoadCheck;
-        logoImage.onerror = () => { 
+        logoImage.onerror = () => {
             console.error("Error cargando la imagen del LOGO. No se mostrará.");
             onImageLoadCheck(); // Llama al contador global
         };
-        
+
         // --- Fin Lógica de carga ---
 
         // --- 6. INICIALIZACIÓN Y EVENTOS ---
@@ -1109,42 +1457,35 @@
             canvasHeight = window.innerHeight;
             canvas.width = canvasWidth;
             canvas.height = canvasHeight;
-            
-            // --- INICIO CAMBIOS RESPONSIVOS ---
 
-            // 1. Definir el margen inferior para controles
-            if (window.innerWidth <= 1024) { 
-                bottomGameMargin = 100; // Reserva 100px para controles en móvil
-            } else { 
-                bottomGameMargin = 20; // Margen normal en PC
-            }
+            const hasTouchLayout = window.innerWidth <= 1024 || window.matchMedia('(pointer: coarse)').matches;
+            const isLandscapeShort = canvasHeight < 520 && canvasWidth > canvasHeight;
+            bottomGameMargin = hasTouchLayout
+                ? clamp(canvasHeight * (isLandscapeShort ? 0.14 : 0.17), 82, 148)
+                : clamp(canvasHeight * 0.03, 18, 32);
 
-            // 2. Definir el horizonte (para arreglar el "largo")
-            horizonY = canvasHeight * 0.45; // 45% desde el tope (en lugar de 50%)
-
-            // --- FIN CAMBIOS RESPONSIVOS ---
+            horizonY = canvasHeight * (isLandscapeShort ? 0.39 : 0.43);
 
             // Reiniciar estrellas
             if(gameState === 'playing' || gameState === 'hangar') {
                  stars = [];
-                 for (let i = 0; i < 150; i++) {
+                 for (let i = 0; i < getStarCount(); i++) {
                     stars.push(new Star());
                 }
             }
             if(player) {
-                player.x = canvasWidth / 2 - player.width / 2;
-                player.y = canvasHeight - player.height - bottomGameMargin; // Ajustar a nuevo margen
+                player.resize();
             }
             if(planet) {
-                planet.y = 150;
-                planet.radius = 100;
+                planet.setMission(currentMission || getMissionConfig(missionLevel));
+                planet.update(getMissionProgress());
             }
         }
 
         // Eventos de Teclado (PC)
         window.addEventListener('keydown', (e) => { keys[e.key.toLowerCase()] = true; });
         window.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
-        
+
         // Evento de Redimensión
         window.addEventListener('resize', resizeCanvas);
 
@@ -1166,17 +1507,17 @@
             if (!audioReady) {
                 initAudio();
             }
-            
+
             // 3. Manejar la Música de Fondo
             if (audioReady && backgroundMusic.state !== 'started') {
                 try {
                     // Mostrar carga al usuario
                     startMissionButton.disabled = true;
                     startMissionButton.textContent = "Cargando Música...";
-                    
+
                     await backgroundMusic.load(musicUrl);
                     backgroundMusic.start();
-                    
+
                     console.log("Música de fondo iniciada.");
                     // Restaurar botón (aunque se va a ocultar)
                     startMissionButton.disabled = false;
@@ -1194,7 +1535,7 @@
             initMission();
             setGameState('playing');
         });
-        
+
         // Volver al Hangar
         function goBackToHangar() {
             if (gameState === 'over') {
@@ -1204,6 +1545,16 @@
                 totalScore = 0; // Reiniciar puntaje total
                 playerShootCooldown = 15;
                 fireRateCost = 100;
+                missionLevel = 1;
+                currentMission = null;
+                completedMission = null;
+                score = 0;
+                enemiesToDefeat = getMissionConfig(missionLevel).enemiesToDefeat;
+            } else if (gameState === 'won') {
+                currentMission = null;
+                completedMission = null;
+                score = 0;
+                enemiesToDefeat = getMissionConfig(missionLevel).enemiesToDefeat;
             }
             // (Si ganas, ya recibiste las recompensas)
             setGameState('hangar');
@@ -1227,75 +1578,51 @@
             }
         });
 
-        // --- Eventos de Controles Móviles (Táctiles) ---
-        // Objeto para rastrear los toques activos
-        const activeTouches = {};
+        // --- Eventos de Controles Móviles (Pointer Events) ---
+        const activePointers = new Map();
 
-        function handleTouch(e, key, isPressed) {
-            e.preventDefault(); // Evita el zoom o scroll
+        function pressControl(key, isPressed) {
             keys[key] = isPressed;
-
-            if (isPressed) {
-                // Guardamos el ID del toque y a qué tecla pertenece
-                for (const touch of e.changedTouches) {
-                    activeTouches[touch.identifier] = key;
-                }
-            } else {
-                // Limpiamos los IDs de toques que se soltaron
-                for (const touch of e.changedTouches) {
-                    if (activeTouches[touch.identifier] === key) {
-                        delete activeTouches[touch.identifier];
-                    }
-                }
-            }
         }
 
-        // Asignamos los listeners de INICIO
-        btnUp.addEventListener('touchstart', (e) => handleTouch(e, 'w', true));
-        btnDown.addEventListener('touchstart', (e) => handleTouch(e, 's', true));
-        btnLeft.addEventListener('touchstart', (e) => handleTouch(e, 'a', true));
-        btnRight.addEventListener('touchstart', (e) => handleTouch(e, 'd', true));
-        btnFire.addEventListener('touchstart', (e) => handleTouch(e, ' ', true));
+        function releasePointer(pointerId) {
+            const key = activePointers.get(pointerId);
+            if (!key) return;
+            pressControl(key, false);
+            activePointers.delete(pointerId);
+        }
 
-        // Asignamos los listeners de FIN
-        btnUp.addEventListener('touchend', (e) => handleTouch(e, 'w', false));
-        btnDown.addEventListener('touchend', (e) => handleTouch(e, 's', false));
-        btnLeft.addEventListener('touchend', (e) => handleTouch(e, 'a', false));
-        btnRight.addEventListener('touchend', (e) => handleTouch(e, 'd', false));
-        btnFire.addEventListener('touchend', (e) => handleTouch(e, ' ', false));
+        function bindControlButton(button, key) {
+            button.addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                button.setPointerCapture?.(e.pointerId);
+                activePointers.set(e.pointerId, key);
+                pressControl(key, true);
+            });
 
-        // --- ¡SOLUCIÓN AL "PEGADO"! ---
-        // Si el toque se cancela (ej. una alerta del sistema), también soltamos la tecla
-        btnUp.addEventListener('touchcancel', (e) => handleTouch(e, 'w', false));
-        btnDown.addEventListener('touchcancel', (e) => handleTouch(e, 's', false));
-        btnLeft.addEventListener('touchcancel', (e) => handleTouch(e, 'a', false));
-        btnRight.addEventListener('touchcancel', (e) => handleTouch(e, 'd', false));
-        btnFire.addEventListener('touchcancel', (e) => handleTouch(e, ' ', false));
-        
-        // SOLUCIÓN DEFINITIVA: Si el dedo se desliza *fuera* de un botón, lo detectamos
-        // y soltamos la tecla correspondiente.
-        window.addEventListener('touchmove', (e) => {
-            for (const touch of e.changedTouches) {
-                const key = activeTouches[touch.identifier];
-                if (key) {
-                    // Verificamos qué elemento está ahora bajo el dedo
-                    const element = document.elementFromPoint(touch.clientX, touch.clientY);
-                    
-                    // Si el elemento NO es el botón que originó el toque (o su hijo), soltamos la tecla
-                    let originalButton;
-                    if (key === 'w') originalButton = btnUp;
-                    else if (key === 's') originalButton = btnDown;
-                    else if (key === 'a') originalButton = btnLeft;
-                    else if (key === 'd') originalButton = btnRight;
-                    else if (key === ' ') originalButton = btnFire;
+            button.addEventListener('pointerup', (e) => {
+                e.preventDefault();
+                releasePointer(e.pointerId);
+            });
 
-                    if (element !== originalButton && (originalButton && !originalButton.contains(element))) {
-                        keys[key] = false; // Soltamos la tecla
-                        delete activeTouches[touch.identifier]; // Dejamos de rastrear este toque
-                    }
-                }
-            }
-        }, { passive: false });
+            button.addEventListener('pointercancel', (e) => {
+                e.preventDefault();
+                releasePointer(e.pointerId);
+            });
+
+            button.addEventListener('lostpointercapture', (e) => {
+                releasePointer(e.pointerId);
+            });
+        }
+
+        bindControlButton(btnUp, 'w');
+        bindControlButton(btnDown, 's');
+        bindControlButton(btnLeft, 'a');
+        bindControlButton(btnRight, 'd');
+        bindControlButton(btnFire, ' ');
+
+        window.addEventListener('pointerup', (e) => releasePointer(e.pointerId));
+        window.addEventListener('pointercancel', (e) => releasePointer(e.pointerId));
 
 
         // Configuración inicial
